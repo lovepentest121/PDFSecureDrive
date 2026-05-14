@@ -3,6 +3,13 @@ package com.pdfsecuredrive.app.security
 // Ordered SAFE(0) → CRITICAL(4) so maxByOrNull picks the worst threat
 enum class RiskLevel { SAFE, LOW, MEDIUM, HIGH, CRITICAL }
 
+enum class VtStatus {
+    NOT_CONFIGURED, // No API key set
+    CLEAN,          // VirusTotal says safe
+    MALICIOUS,      // VirusTotal detected threats
+    ERROR           // VT unreachable/timeout
+}
+
 data class Threat(
     val name: String,
     val description: String,
@@ -16,7 +23,8 @@ data class ScanResult(
     val fileName: String,
     val fileSize: Long,
     val scanDurationMs: Long,
-    val fileHash: String
+    val fileHash: String,
+    val vtStatus: VtStatus = VtStatus.NOT_CONFIGURED
 ) {
     val highestRisk: RiskLevel
         get() = threats.maxByOrNull { it.riskLevel.ordinal }?.riskLevel ?: RiskLevel.SAFE

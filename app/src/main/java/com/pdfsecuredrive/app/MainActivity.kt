@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -79,6 +81,25 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btn_sign_in).setOnClickListener { startSignIn() }
         findViewById<Button>(R.id.btn_sign_out).setOnClickListener { signOut() }
+
+        // Load existing VT key (show masked)
+        val etVt = findViewById<EditText>(R.id.et_vt_key)
+        val existingKey = SecurePreferences.getVtApiKey(this)
+        if (existingKey.isNotBlank()) {
+            etVt.hint = "API key saved (${existingKey.take(4)}****)"
+        }
+
+        findViewById<Button>(R.id.btn_save_vt).setOnClickListener {
+            val key = etVt.text.toString().trim()
+            if (key.length < 32) {
+                Toast.makeText(this, "Invalid API key — must be at least 32 chars", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            SecurePreferences.saveVtApiKey(this, key)
+            etVt.setText("")
+            etVt.hint = "API key saved (${key.take(4)}****)"
+            Toast.makeText(this, "VirusTotal API key saved securely", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun requestRuntimePermissions() {

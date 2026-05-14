@@ -8,8 +8,9 @@ import androidx.security.crypto.MasterKey
 object SecurePreferences {
 
     private const val PREFS_NAME = "app_secure_prefs"
-    private const val KEY_ACCOUNT = "a"       // Obfuscated key names
-    private const val KEY_ENABLED = "e"
+    private const val KEY_ACCOUNT  = "a"
+    private const val KEY_ENABLED  = "e"
+    private const val KEY_VT_KEY   = "v"      // VirusTotal API key — AES-256 encrypted
 
     private fun prefs(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -35,6 +36,12 @@ object SecurePreferences {
 
     fun isEnabled(context: Context): Boolean =
         prefs(context).getBoolean(KEY_ENABLED, false)
+
+    fun saveVtApiKey(context: Context, key: String) =
+        prefs(context).edit().putString(KEY_VT_KEY, key).apply()
+
+    fun getVtApiKey(context: Context): String =
+        prefs(context).getString(KEY_VT_KEY, "") ?: ""
 
     fun clearAll(context: Context) =
         prefs(context).edit().clear().apply()

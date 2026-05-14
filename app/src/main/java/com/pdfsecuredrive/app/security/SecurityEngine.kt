@@ -1,6 +1,7 @@
 package com.pdfsecuredrive.app.security
 
 import android.content.Context
+import com.pdfsecuredrive.app.storage.SecurePreferences
 import java.io.File
 
 object SecurityEngine {
@@ -17,11 +18,39 @@ object SecurityEngine {
         val fnResult = FilenameValidator.validate(file.name)
         allThreats.addAll(fnResult.threats)
 
-        // Stage 2: PDF static content analysis (magic bytes, patterns, structure)
+        // Stage 2: PDF static analysis — magic bytes, patterns, structure
         val scanOutput = PdfScanner.scan(file)
         allThreats.addAll(scanOutput.threats)
 
-        // Deduplicate across both stages
+        // Stage 3: VirusTotal cloud scan (only if local scan passes + API key set)
+        val vtApiKey = SecurePreferences.getVtApiKey(context)
+        var vtStatus = VtStatus.NOT_CONFIGURED
+
+        if (allThreats.isEmpty() && scanOutput.isValidPdf && vtApiKey.isNotBlank()) {
+            when (val vtResult = VirusTotalScanner.scan(file, vtApiKey, scanOutput.fileHash)) {
+                is VirusTotalScanner.VtResult.Clean -> {
+                    vtStatus = VtStatus.CLEAN
+                }
+                is VirusTotalScanner.VtResult.Malicious -> {
+                    vtStatus = VtStatus.MALICIOUS
+                    allThreats.addAll(vtResult.threats)
+                    // Add summary threat
+                    allThreats.add(Threat(
+                        name = "VirusTotal Detection",
+                        description = "${vtResult.detections}/${vtResult.totalEngines} engines flagged this file",
+                        riskLevel = RiskLevel.CRITICAL,
+                        vector = "VirusTotal"
+                    ))
+                }
+                is VirusTotalScanner.VtResult.Error -> {
+                    vtStatus = VtStatus.ERROR
+                }
+                is VirusTotalScanner.VtResult.NoApiKey -> {
+                    vtStatus = VtStatus.NOT_CONFIGURED
+                }
+            }
+        }
+
         val unique = allThreats.distinctBy { it.name }
 
         return ScanResult(
@@ -30,7 +59,9 @@ object SecurityEngine {
             fileName = file.name,
             fileSize = file.length(),
             scanDurationMs = System.currentTimeMillis() - start,
-            fileHash = scanOutput.fileHash
+            fileHash = scanOutput.fileHash,
+            vtStatus = vtStatus
         )
     }
 }
+

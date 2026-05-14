@@ -60,11 +60,18 @@ object AppNotificationManager {
             putExtra(EXTRA_NOTIF_ID, id)
         }
 
+        val vtLine = when (result.vtStatus) {
+            com.pdfsecuredrive.app.security.VtStatus.CLEAN          -> "🛡️ VirusTotal: CLEAN\n"
+            com.pdfsecuredrive.app.security.VtStatus.ERROR          -> "⚠️ VirusTotal: Unreachable\n"
+            com.pdfsecuredrive.app.security.VtStatus.NOT_CONFIGURED -> "ℹ️ VirusTotal: No API key\n"
+            else -> ""
+        }
         val body = buildString {
             append("📄 ${result.fileName}\n")
             append("📦 Size: ${fmtSize(result.fileSize)}\n")
             append("🔑 SHA-256: ${result.fileHash.take(16)}…\n")
             append("⏱ Scan: ${result.scanDurationMs}ms\n")
+            append(vtLine)
             append("✅ Status: SAFE — No threats found\n\n")
             append("Upload to Google Drive?")
         }
