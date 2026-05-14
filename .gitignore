@@ -2,6 +2,8 @@
 google-services.json
 *.jks
 *.keystore
+# Allow fixed debug keystore (no secrets — only for consistent SHA-1 in CI)
+!keystore/debug.keystore
 local.properties
 *.env
 
