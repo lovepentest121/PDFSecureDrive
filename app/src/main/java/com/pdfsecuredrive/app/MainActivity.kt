@@ -131,7 +131,8 @@ class MainActivity : AppCompatActivity() {
         val empty = all.isEmpty()
         findViewById<View>(R.id.ll_empty).visibility           = if (empty) View.VISIBLE else View.GONE
         findViewById<RecyclerView>(R.id.rv_history).visibility = if (empty) View.GONE  else View.VISIBLE
-        findViewById<View>(R.id.ll_search).visibility          = if (empty) View.GONE  else View.VISIBLE
+        // Search bar lives inside ll_history_header — show when records exist
+        runCatching { findViewById<View>(R.id.ll_search).visibility = if (empty) View.GONE else View.VISIBLE }
 
         val uploads = HistoryStore.totalUploads(this)
         val scans   = HistoryStore.totalScans(this)
