@@ -254,7 +254,7 @@
             android:layout_weight="1"
             android:background="@null"
             android:hint="Search PDFs..."
-            android:hintTextColor="#FF475569"
+            android:textColorHint="#FF475569"
             android:textColor="#FFE2E8F0"
             android:textSize="12sp"
             android:inputType="text"
