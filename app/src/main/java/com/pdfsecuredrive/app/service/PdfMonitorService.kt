@@ -13,9 +13,11 @@ import com.pdfsecuredrive.app.pdf.PdfCoverExtractor
 import com.pdfsecuredrive.app.security.PdfScanner
 import com.pdfsecuredrive.app.security.SecurityEngine
 import com.pdfsecuredrive.app.storage.HistoryStore
-import java.util.UUID
+import com.pdfsecuredrive.app.storage.SecurePreferences
 import kotlinx.coroutines.*
 import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -44,13 +46,15 @@ class PdfMonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_SCAN_FILE) {
             val uriStr = intent.getStringExtra(EXTRA_FILE_URI) ?: return START_STICKY
-            Uri.parse(uriStr).path?.let { enqueueFile(it) }
+            enqueueUri(uriStr)
         }
         return START_STICKY
     }
 
     private fun registerObservers() {
         val handler = Handler(Looper.getMainLooper())
+
+        // MediaStore observer
         contentObserver = object : ContentObserver(handler) {
             override fun onChange(selfChange: Boolean, uri: Uri?) { uri?.let { queryMediaStore(it) } }
         }
@@ -58,26 +62,47 @@ class PdfMonitorService : Service() {
             contentResolver.registerContentObserver(
                 MediaStore.Downloads.EXTERNAL_CONTENT_URI, true, contentObserver!!
             )
-        } catch (_: SecurityException) { }
+        } catch (_: Exception) {}
 
-        val dlDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        fileObserver = buildFileObserver(dlDir)
+        // Also observe all media
+        try {
+            contentResolver.registerContentObserver(
+                MediaStore.Files.getContentUri("external"), true, contentObserver!!
+            )
+        } catch (_: Exception) {}
+
+        // FileObserver on Downloads + common app download dirs
+        val dirs = listOfNotNull(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            File(Environment.getExternalStorageDirectory(), "LinkedIn"),
+            File(Environment.getExternalStorageDirectory(), "WhatsApp/Media/WhatsApp Documents"),
+            File(Environment.getExternalStorageDirectory(), "Telegram"),
+        ).filter { it.exists() || it.mkdirs() }
+
+        fileObserver = buildMultiDirObserver(dirs)
         fileObserver?.startWatching()
     }
 
-    private fun buildFileObserver(dir: File): FileObserver {
+    private fun buildMultiDirObserver(dirs: List<File>): FileObserver {
         val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            object : FileObserver(dir, mask) {
+            object : FileObserver(dirs, mask) {
                 override fun onEvent(event: Int, path: String?) {
-                    if (path?.lowercase()?.endsWith(".pdf") == true) enqueueFile("${dir.absolutePath}/$path")
+                    if (path?.lowercase()?.endsWith(".pdf") == true) {
+                        dirs.forEach { d ->
+                            val f = File(d, path)
+                            if (f.exists()) enqueueUri(Uri.fromFile(f).toString())
+                        }
+                    }
                 }
             }
         } else {
+            // API 26-28: watch first dir only
             @Suppress("DEPRECATION")
-            object : FileObserver(dir.absolutePath, mask) {
+            object : FileObserver(dirs.first().absolutePath, mask) {
                 override fun onEvent(event: Int, path: String?) {
-                    if (path?.lowercase()?.endsWith(".pdf") == true) enqueueFile("${dir.absolutePath}/$path")
+                    if (path?.lowercase()?.endsWith(".pdf") == true)
+                        enqueueUri(Uri.fromFile(File(dirs.first(), path)).toString())
                 }
             }
         }
@@ -86,61 +111,93 @@ class PdfMonitorService : Service() {
     private fun queryMediaStore(uri: Uri) {
         scope.launch {
             try {
-                contentResolver.query(
-                    uri,
-                    arrayOf(MediaStore.Downloads.DATA, MediaStore.Downloads.MIME_TYPE),
+                contentResolver.query(uri,
+                    arrayOf(MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.MIME_TYPE),
                     null, null, null
                 )?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val mime = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Downloads.MIME_TYPE))
-                        val path = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Downloads.DATA))
+                    while (cursor.moveToNext()) {
+                        val mime = runCatching {
+                            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE))
+                        }.getOrNull()
+                        val path = runCatching {
+                            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA))
+                        }.getOrNull()
                         if (path != null && (mime == "application/pdf" || path.lowercase().endsWith(".pdf")))
-                            enqueueFile(path)
+                            enqueueUri(Uri.fromFile(File(path)).toString())
                     }
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) {}
         }
     }
 
-    private fun enqueueFile(path: String) {
+    private fun enqueueUri(uriStr: String) {
+        val key = uriStr
         val now = System.currentTimeMillis()
-        if (scanned[path]?.let { now - it < 5_000 } == true) return
-        scanned[path] = now
+        if (scanned[key]?.let { now - it < 5_000 } == true) return
+        scanned[key] = now
         if (scanned.size > 200) scanned.entries.removeIf { now - it.value > 120_000 }
 
         scope.launch {
-            delay(1_500)
-            val file = File(path)
-            if (!file.exists() || !file.canRead() || file.length() == 0L) return@launch
+            delay(2_000) // wait for write to finish
+
+            val file = resolveToFile(uriStr) ?: return@launch
+            if (!file.exists() || file.length() < 100) return@launch
 
             val result = SecurityEngine.scanFile(applicationContext, file)
             val id = idCounter.getAndIncrement()
-
-            // Extract cover page (safe: read-only PdfRenderer, no execution)
-            val coverFile = if (result.isValidPdf) {
-                PdfCoverExtractor.extract(file, cacheDir)
-            } else null
+            val coverFile = if (result.isValidPdf) PdfCoverExtractor.extract(file, cacheDir) else null
 
             if (result.isSafe) {
-                AppNotificationManager.showSafePrompt(applicationContext, result, path, coverFile?.absolutePath, id)
+                AppNotificationManager.showSafePrompt(applicationContext, result, file.absolutePath, coverFile?.absolutePath, id)
             } else {
-                // Save threat to history
                 HistoryStore.add(applicationContext, PdfRecord(
-                    id         = UUID.randomUUID().toString(),
-                    fileName   = file.name,
-                    aiTitle    = file.nameWithoutExtension,
-                    driveLink  = null,
-                    coverPath  = null,
-                    fileSize   = file.length(),
-                    fileHash   = PdfScanner.computeHash(file),
-                    scanDate   = System.currentTimeMillis(),
-                    status     = "THREAT",
-                    threatCount= result.threatCount,
-                    riskLevel  = result.highestRisk.name
+                    id = UUID.randomUUID().toString(),
+                    fileName = file.name,
+                    aiTitle = file.nameWithoutExtension,
+                    driveLink = null, coverPath = null,
+                    fileSize = file.length(),
+                    fileHash = PdfScanner.computeHash(file),
+                    scanDate = System.currentTimeMillis(),
+                    status = "THREAT",
+                    threatCount = result.threatCount,
+                    riskLevel = result.highestRisk.name
                 ))
                 AppNotificationManager.showThreat(applicationContext, result, id)
             }
+
+            // Clean temp cache files
+            if (file.absolutePath.startsWith(cacheDir.absolutePath) && file.name.startsWith("dl_")) {
+                file.delete()
+            }
         }
+    }
+
+    // Resolve URI to a readable File — copies content:// URIs to cache
+    private fun resolveToFile(uriStr: String): File? {
+        return try {
+            val uri = Uri.parse(uriStr)
+            when {
+                uriStr.startsWith("file://") -> {
+                    File(uri.path ?: return null).takeIf { it.canRead() }
+                }
+                uriStr.startsWith("content://") -> {
+                    copyContentToCache(uri)
+                }
+                else -> {
+                    File(uriStr).takeIf { it.canRead() }
+                }
+            }
+        } catch (_: Exception) { null }
+    }
+
+    private fun copyContentToCache(uri: Uri): File? {
+        return try {
+            val dest = File(cacheDir, "dl_${System.currentTimeMillis()}.pdf")
+            contentResolver.openInputStream(uri)?.use { inp ->
+                FileOutputStream(dest).use { out -> inp.copyTo(out) }
+            }
+            dest.takeIf { it.exists() && it.length() > 0 }
+        } catch (_: Exception) { null }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

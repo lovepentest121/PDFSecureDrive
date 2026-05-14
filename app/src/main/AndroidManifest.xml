@@ -12,6 +12,9 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- Required for Android 11+ to read Downloads/all files -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 
     <application
         android:name=".App"
@@ -24,6 +27,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+        android:requestLegacyExternalStorage="true"
         tools:targetApi="34">
 
         <activity
@@ -37,42 +41,27 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
+        <activity android:name=".SettingsActivity" android:exported="false"
             android:windowSoftInputMode="stateHidden" />
+        <activity android:name=".PdfDetailActivity" android:exported="false" />
 
-        <activity
-            android:name=".PdfDetailActivity"
-            android:exported="false" />
+        <service android:name=".service.PdfMonitorService" android:exported="false"
+            android:foregroundServiceType="dataSync" android:stopWithTask="false" />
 
-        <service
-            android:name=".service.PdfMonitorService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync"
-            android:stopWithTask="false" />
-
-        <receiver
-            android:name=".receiver.BootReceiver"
-            android:exported="true">
+        <receiver android:name=".receiver.BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
-        <!-- Correct action: android.intent.action.DOWNLOAD_COMPLETE -->
-        <receiver
-            android:name=".receiver.DownloadCompleteReceiver"
-            android:exported="true">
+        <receiver android:name=".receiver.DownloadCompleteReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".receiver.NotificationActionReceiver"
-            android:exported="false" />
+        <receiver android:name=".receiver.NotificationActionReceiver" android:exported="false" />
 
     </application>
 </manifest>

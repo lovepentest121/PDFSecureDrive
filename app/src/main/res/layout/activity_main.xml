@@ -4,29 +4,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF0A0F1E"
+    android:background="#FF080C14"
     android:filterTouchesWhenObscured="true">
 
-    <!-- ─── TOP BAR ─── -->
+    <!-- ══════ TOP BAR ══════ -->
     <LinearLayout
         android:id="@+id/ll_topbar"
         android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:layout_height="58dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:background="#FF0D1220"
+        android:background="@drawable/topbar_bg"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Avatar -->
         <TextView
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:text="P"
             android:textColor="#FFFFFFFF"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:gravity="center"
             android:background="@drawable/btn_primary"
@@ -42,170 +41,168 @@
                 android:layout_height="wrap_content"
                 android:text="PDF Secure Drive"
                 android:textColor="#FFE2E8F0"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SECURITY CORE"
                 android:textColor="#FF3B82F6"
-                android:textSize="9sp"
-                android:letterSpacing="0.12" />
+                android:textSize="8sp"
+                android:letterSpacing="0.15" />
         </LinearLayout>
 
-        <!-- Interceptor status -->
+        <!-- Interceptor pill -->
         <LinearLayout
             android:id="@+id/ll_interceptor"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
+            android:layout_height="26dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingHorizontal="10dp"
             android:background="@drawable/chip_bg"
             android:layout_marginEnd="8dp">
             <View
-                android:id="@+id/v_interceptor_dot"
-                android:layout_width="7dp"
-                android:layout_height="7dp"
+                android:id="@+id/v_dot"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
                 android:background="@drawable/dot_green"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="5dp"
+                android:visibility="invisible"/>
             <TextView
                 android:id="@+id/tv_interceptor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="INTERCEPTOR: OFF"
+                android:text="OFFLINE"
                 android:textColor="#FF64748B"
-                android:textSize="9sp"
-                android:letterSpacing="0.08" />
+                android:textSize="8sp"
+                android:letterSpacing="0.1" />
         </LinearLayout>
 
         <ImageButton
             android:id="@+id/btn_settings"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@drawable/ic_settings"
             android:background="@drawable/chip_bg"
-            android:padding="7dp"
+            android:padding="6dp"
             android:contentDescription="Settings"
             android:layout_marginEnd="6dp" />
 
         <ImageButton
             android:id="@+id/btn_logout"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@drawable/ic_logout"
             android:background="@drawable/chip_bg"
-            android:padding="7dp"
+            android:padding="6dp"
             android:contentDescription="Logout"
             android:visibility="gone" />
 
         <Button
             android:id="@+id/btn_sign_in"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
+            android:layout_height="30dp"
             android:text="Connect"
             android:background="@drawable/btn_primary"
             android:textColor="#FFFFFFFF"
-            android:textSize="11sp"
-            android:paddingHorizontal="14dp"
+            android:textSize="10sp"
+            android:paddingHorizontal="12dp"
             android:stateListAnimator="@null" />
-
     </LinearLayout>
 
-    <!-- ─── STATS ROW ─── -->
+    <!-- ══════ PERMISSION BANNER ══════ -->
+    <LinearLayout
+        android:id="@+id/ll_permission_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/permission_banner_bg"
+        android:padding="12dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/ll_topbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚠️  Allow 'All Files Access' for full PDF detection"
+            android:textColor="#FFFF9500"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btn_grant_permission"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:text="Grant"
+            android:background="@drawable/btn_primary"
+            android:textColor="#FFFFFFFF"
+            android:textSize="10sp"
+            android:paddingHorizontal="12dp"
+            android:stateListAnimator="@null" />
+    </LinearLayout>
+
+    <!-- ══════ STATS ROW ══════ -->
     <LinearLayout
         android:id="@+id/ll_stats"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="4dp"
-        app:layout_constraintTop_toBottomOf="@id/ll_topbar"
+        android:paddingTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/ll_permission_banner"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Cloud capacity card -->
+        <!-- Drive card -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:background="@drawable/panel_bg"
+            android:background="@drawable/stat_card_blue"
             android:padding="14dp"
-            android:layout_marginEnd="8dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="• CLOUD CAPACITY"
-                android:textColor="#FF64748B"
-                android:textSize="9sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="6dp" />
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
-                <TextView
-                    android:id="@+id/tv_drive_used"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textColor="#FFE2E8F0"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" GB USED"
-                    android:textColor="#FF64748B"
-                    android:textSize="9sp" />
+            android:layout_marginEnd="6dp"
+            android:elevation="6dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="☁️ CLOUD" android:textColor="#FF3B82F6" android:textSize="9sp" android:letterSpacing="0.1" />
             </LinearLayout>
-            <TextView
-                android:id="@+id/tv_drive_quota"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CONNECT TO SEE USAGE"
-                android:textColor="#FF3B5B8E"
-                android:textSize="9sp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="8dp" />
-            <ProgressBar
-                android:id="@+id/pb_drive"
-                android:layout_width="match_parent"
-                android:layout_height="3dp"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:progress="0"
-                android:progressTint="#FF3B82F6"
-                android:progressBackgroundTint="#FF1E2A45" />
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="bottom">
+                <TextView android:id="@+id/tv_drive_used" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="#FFE2E8F0" android:textSize="24sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" GB" android:textColor="#FF64748B" android:textSize="11sp" android:layout_marginBottom="3dp" />
+            </LinearLayout>
+            <TextView android:id="@+id/tv_drive_quota" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Connect to see usage" android:textColor="#FF3B5B8E" android:textSize="9sp" android:layout_marginBottom="8dp" android:layout_marginTop="1dp" />
+            <ProgressBar android:id="@+id/pb_drive" android:layout_width="match_parent" android:layout_height="3dp" style="?android:attr/progressBarStyleHorizontal" android:progress="0" android:progressTint="#FF3B82F6" android:progressBackgroundTint="#FF1E2A45" />
         </LinearLayout>
 
-        <!-- Analytics card -->
+        <!-- Scans card -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:background="@drawable/panel_bg"
-            android:padding="14dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="SYSTEM ANALYTICS"
-                android:textColor="#FF64748B"
-                android:textSize="9sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="8dp" />
+            android:background="@drawable/stat_card_green"
+            android:padding="14dp"
+            android:layout_marginStart="6dp"
+            android:elevation="6dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️ ANALYTICS" android:textColor="#FF10B981" android:textSize="9sp" android:letterSpacing="0.1" android:layout_marginBottom="8dp" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="6dp">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="INTERCEPTS" android:textColor="#FF64748B" android:textSize="9sp" />
-                <TextView android:id="@+id/tv_intercepts" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FF3B82F6" android:textSize="14sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SCANS" android:textColor="#FF64748B" android:textSize="9sp" />
+                <TextView android:id="@+id/tv_intercepts" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FF3B82F6" android:textSize="16sp" android:textStyle="bold" />
             </LinearLayout>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
                 <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SECURED" android:textColor="#FF64748B" android:textSize="9sp" />
-                <TextView android:id="@+id/tv_secured" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FF10B981" android:textSize="14sp" android:textStyle="bold" />
+                <TextView android:id="@+id/tv_secured" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FF10B981" android:textSize="16sp" android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 
-    <!-- ─── HISTORY HEADER ─── -->
+    <!-- ══════ HISTORY HEADER ══════ -->
     <LinearLayout
         android:id="@+id/ll_history_header"
         android:layout_width="0dp"
@@ -214,40 +211,20 @@
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
         android:paddingTop="16dp"
-        android:paddingBottom="10dp"
+        android:paddingBottom="8dp"
         app:layout_constraintTop_toBottomOf="@id/ll_stats"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <View
-            android:layout_width="7dp"
-            android:layout_height="7dp"
-            android:background="@drawable/dot_green"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="LEDGER: PDF HISTORY"
-            android:textColor="#FFB0BBCC"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.08" />
-
-        <TextView
-            android:id="@+id/tv_secured_badge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 SECURED"
-            android:textColor="#FF10B981"
-            android:textSize="10sp"
-            android:background="@drawable/badge_uploaded"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp" />
+        <View android:layout_width="6dp" android:layout_height="6dp" android:background="@drawable/dot_green" android:layout_marginEnd="8dp" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="PDF LEDGER" android:textColor="#FFB0BBCC" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.1" />
+        <TextView android:id="@+id/tv_secured_badge" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="0 SECURED" android:textColor="#FF10B981" android:textSize="9sp"
+            android:background="@drawable/badge_uploaded" android:paddingHorizontal="8dp" android:paddingVertical="4dp" />
     </LinearLayout>
 
-    <!-- ─── HISTORY LIST ─── -->
+    <!-- ══════ LIST ══════ -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_history"
         android:layout_width="0dp"
@@ -255,78 +232,49 @@
         android:paddingHorizontal="16dp"
         android:paddingBottom="16dp"
         android:clipToPadding="false"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/ll_history_header"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Empty state -->
+    <!-- ══════ EMPTY STATE ══════ -->
     <LinearLayout
         android:id="@+id/ll_empty"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:orientation="vertical"
         android:gravity="center"
-        android:visibility="visible"
         app:layout_constraintTop_toBottomOf="@id/ll_history_header"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🛡️"
-            android:textSize="48sp" />
-
-        <TextView
-            android:id="@+id/tv_empty_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No PDF history yet"
-            android:textColor="#FFE2E8F0"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:layout_marginTop="12dp" />
-
-        <TextView
-            android:id="@+id/tv_empty_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect Google Drive, then download\nany PDF to start monitoring"
-            android:textColor="#FF64748B"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:lineSpacingMultiplier="1.5"
-            android:layout_marginTop="8dp" />
-
-        <Button
-            android:id="@+id/btn_sign_in_empty"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️" android:textSize="52sp" />
+        <TextView android:id="@+id/tv_empty_title"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="No scans yet" android:textColor="#FFE2E8F0"
+            android:textSize="16sp" android:textStyle="bold" android:layout_marginTop="12dp" />
+        <TextView android:id="@+id/tv_empty_sub"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Connect Drive, then download any PDF\nto start automatic scanning"
+            android:textColor="#FF64748B" android:textSize="12sp" android:gravity="center"
+            android:lineSpacingMultiplier="1.5" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btn_sign_in_empty"
+            android:layout_width="wrap_content" android:layout_height="44dp"
             android:text="Connect Google Drive"
-            android:background="@drawable/btn_primary"
-            android:textColor="#FFFFFFFF"
-            android:textSize="13sp"
-            android:paddingHorizontal="24dp"
-            android:layout_marginTop="20dp"
-            android:stateListAnimator="@null"
+            android:background="@drawable/btn_primary" android:textColor="#FFFFFFFF"
+            android:textSize="13sp" android:paddingHorizontal="24dp"
+            android:layout_marginTop="20dp" android:stateListAnimator="@null"
             android:visibility="gone" />
-
     </LinearLayout>
 
-    <!-- Root Warning -->
     <TextView
         android:id="@+id/tv_root_warning"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/root_warning"
-        android:textColor="#FFFF6D00"
-        android:textSize="11sp"
-        android:gravity="center"
-        android:visibility="gone"
-        android:padding="8dp"
-        android:background="#1AFF6D00"
+        android:layout_width="0dp" android:layout_height="wrap_content"
+        android:text="@string/root_warning" android:textColor="#FFFF6D00"
+        android:textSize="11sp" android:gravity="center" android:visibility="gone"
+        android:padding="8dp" android:background="#1AFF6D00"
         android:layout_marginHorizontal="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
