@@ -150,13 +150,17 @@ class PdfMonitorService : Service() {
             if (result.isSafe) {
                 AppNotificationManager.showSafePrompt(applicationContext, result, file.absolutePath, coverFile?.absolutePath, id)
             } else {
+                // Auto-delete the malicious file immediately
+                val originalPath = if (uriStr.startsWith("file://")) uriStr.removePrefix("file://") else file.absolutePath
+                val deleted = autoDeleteThreat(uriStr, file, originalPath)
+
                 HistoryStore.add(applicationContext, PdfRecord(
                     id = UUID.randomUUID().toString(),
                     fileName = file.name,
                     aiTitle = file.nameWithoutExtension,
                     driveLink = null,
                     coverPath = coverFile?.absolutePath,
-                    filePath  = if (uriStr.startsWith("file://")) uriStr.removePrefix("file://") else file.absolutePath,
+                    filePath  = null,   // already deleted
                     fileSize = file.length(),
                     fileHash = PdfScanner.computeHash(file),
                     scanDate = System.currentTimeMillis(),
@@ -164,7 +168,7 @@ class PdfMonitorService : Service() {
                     threatCount = result.threatCount,
                     riskLevel = result.highestRisk.name
                 ))
-                AppNotificationManager.showThreat(applicationContext, result, id)
+                AppNotificationManager.showThreat(applicationContext, result, id, deleted)
             }
 
             // Clean temp cache files
@@ -172,6 +176,28 @@ class PdfMonitorService : Service() {
                 file.delete()
             }
         }
+    }
+
+    // Delete malicious file — tries content URI first, then file path
+    private fun autoDeleteThreat(uriStr: String, cacheFile: File, originalPath: String): Boolean {
+        return try {
+            var deleted = false
+            // Try deleting via ContentResolver (works for MediaStore entries)
+            if (uriStr.startsWith("content://")) {
+                runCatching {
+                    val rows = contentResolver.delete(Uri.parse(uriStr), null, null)
+                    if (rows > 0) deleted = true
+                }
+            }
+            // Also try deleting the real file path
+            if (!deleted) {
+                val real = File(originalPath)
+                if (real.exists()) deleted = real.delete()
+            }
+            // Delete cache copy too
+            if (cacheFile.absolutePath.startsWith(cacheDir.absolutePath)) cacheFile.delete()
+            deleted
+        } catch (_: Exception) { false }
     }
 
     // Resolve URI to a readable File — copies content:// URIs to cache

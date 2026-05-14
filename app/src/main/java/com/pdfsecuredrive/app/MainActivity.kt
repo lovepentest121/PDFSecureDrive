@@ -126,8 +126,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshHistory() {
         val all = HistoryStore.getAll(this)
-        records.clear(); records.addAll(all)
-        adapter.notifyDataSetChanged()
+        adapter.updateRecords(all)   // updates both list + fullList for search
 
         val empty = all.isEmpty()
         findViewById<View>(R.id.ll_empty).visibility           = if (empty) View.VISIBLE else View.GONE

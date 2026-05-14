@@ -5,16 +5,17 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:background="@drawable/history_item_bg"
-    android:padding="10dp"
+    android:padding="12dp"
     android:layout_marginBottom="8dp"
     android:clickable="true"
-    android:focusable="true">
+    android:focusable="true"
+    android:elevation="4dp">
 
     <!-- Cover thumbnail -->
     <FrameLayout
-        android:layout_width="52dp"
-        android:layout_height="68dp"
-        android:layout_marginEnd="10dp"
+        android:layout_width="58dp"
+        android:layout_height="76dp"
+        android:layout_marginEnd="12dp"
         android:background="@drawable/cover_frame_bg"
         android:clipToOutline="true">
 
@@ -26,7 +27,6 @@
             android:contentDescription="Cover"
             android:visibility="gone" />
 
-        <!-- Fallback PDF icon when no cover -->
         <LinearLayout
             android:id="@+id/ll_cover_fallback"
             android:layout_width="match_parent"
@@ -34,8 +34,8 @@
             android:gravity="center"
             android:orientation="vertical">
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:src="@drawable/ic_pdf"
                 android:contentDescription="PDF" />
             <TextView
@@ -43,8 +43,8 @@
                 android:layout_height="wrap_content"
                 android:text="PDF"
                 android:textColor="#FF3B5B8E"
-                android:textSize="8sp"
-                android:layout_marginTop="3dp" />
+                android:textSize="9sp"
+                android:layout_marginTop="4dp" />
         </LinearLayout>
     </FrameLayout>
 
@@ -53,129 +53,133 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_gravity="center_vertical">
 
-        <!-- AI Title -->
+        <!-- AI Title (bold, prominent) -->
         <TextView
             android:id="@+id/tv_ai_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Document Title"
-            android:textColor="#FFE2E8F0"
-            android:textSize="12sp"
+            android:textColor="#FFF1F5F9"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:maxLines="2"
-            android:ellipsize="end" />
+            android:ellipsize="end"
+            android:lineSpacingMultiplier="1.2" />
 
-        <!-- Filename -->
+        <!-- Filename (small, muted) -->
         <TextView
             android:id="@+id/tv_filename"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="document.pdf"
-            android:textColor="#FF64748B"
+            android:textColor="#FF475569"
             android:textSize="10sp"
             android:maxLines="1"
             android:ellipsize="middle"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="3dp" />
 
-        <!-- Date + Sync label -->
+        <!-- Date + Status row -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="3dp">
+            android:layout_marginTop="4dp">
+
             <TextView
                 android:id="@+id/tv_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="14/05/2026"
-                android:textColor="#FF475569"
-                android:textSize="9sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
                 android:textColor="#FF334155"
                 android:textSize="9sp" />
+
             <TextView
-                android:id="@+id/tv_sync_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="  ·  "
+                android:textColor="#FF1E2A45"
+                android:textSize="9sp" />
+
+            <TextView
+                android:id="@+id/tv_sync_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="DRIVE SYNC"
                 android:textColor="#FF3B5B8E"
                 android:textSize="9sp"
                 android:letterSpacing="0.05" />
+
+            <!-- Status badge inline -->
+            <TextView
+                android:id="@+id/tv_status_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SAFE"
+                android:textColor="#FF10B981"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:background="@drawable/badge_uploaded"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp" />
         </LinearLayout>
 
-        <!-- Action buttons row -->
+        <!-- Action buttons -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="6dp">
+            android:layout_marginTop="8dp">
 
-            <!-- Copy title -->
+            <!-- Copy AI title -->
             <ImageButton
                 android:id="@+id/btn_copy_title"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_copy_title"
                 android:background="@drawable/chip_bg"
-                android:padding="5dp"
+                android:padding="6dp"
                 android:contentDescription="Copy title"
-                android:layout_marginEnd="4dp" />
+                android:layout_marginEnd="6dp" />
 
             <!-- Copy Drive link -->
             <ImageButton
                 android:id="@+id/btn_copy"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_copy"
                 android:background="@drawable/chip_bg"
-                android:padding="5dp"
-                android:contentDescription="Copy link"
-                android:layout_marginEnd="4dp" />
+                android:padding="6dp"
+                android:contentDescription="Copy Drive link"
+                android:layout_marginEnd="6dp" />
 
-            <!-- Open in Drive -->
+            <!-- Open in browser -->
             <ImageButton
                 android:id="@+id/btn_open"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_open"
                 android:background="@drawable/chip_bg"
-                android:padding="5dp"
+                android:padding="6dp"
                 android:contentDescription="Open in Drive"
-                android:layout_marginEnd="4dp" />
+                android:layout_marginEnd="6dp" />
 
             <!-- Delete -->
             <ImageButton
                 android:id="@+id/btn_delete"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:src="@drawable/ic_delete"
                 android:background="@drawable/chip_bg"
-                android:padding="5dp"
+                android:padding="6dp"
                 android:contentDescription="Delete" />
         </LinearLayout>
     </LinearLayout>
-
-    <!-- Status badge (right aligned, vertically centered) -->
-    <TextView
-        android:id="@+id/tv_status_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:text="SAFE"
-        android:textColor="#FF10B981"
-        android:textSize="8sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.05"
-        android:background="@drawable/badge_uploaded"
-        android:paddingHorizontal="7dp"
-        android:paddingVertical="4dp"
-        android:layout_marginStart="6dp" />
 
 </LinearLayout>

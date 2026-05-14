@@ -181,11 +181,13 @@ class PdfHistoryAdapter(
     override fun getItemCount() = records.size
 
     fun updateRecords(newList: List<PdfRecord>) {
-        fullList = newList
+        fullList = newList.toList()
         records.clear()
         records.addAll(newList)
         notifyDataSetChanged()
     }
+
+    fun getFullList(): List<PdfRecord> = fullList
 
     fun filter(query: String) {
         records.clear()

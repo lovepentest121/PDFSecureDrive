@@ -99,7 +99,7 @@ object AppNotificationManager {
         nm(context).notify(id, builder.build())
     }
 
-    fun showThreat(context: Context, result: ScanResult, id: Int) {
+    fun showThreat(context: Context, result: ScanResult, id: Int, deleted: Boolean = false) {
         val color = when (result.highestRisk) {
             RiskLevel.CRITICAL -> 0xFFFF1744.toInt()
             RiskLevel.HIGH     -> 0xFFFF6D00.toInt()
@@ -110,22 +110,24 @@ object AppNotificationManager {
             RiskLevel.CRITICAL -> "☠️"
             RiskLevel.HIGH     -> "🔴"
             RiskLevel.MEDIUM   -> "🟡"
-            else               -> "⚪"
+            else               -> "🟠"
         }
-        val detail = result.threats.take(5).joinToString("\n") { "• [${it.riskLevel}] ${it.name}" }
-        val more   = if (result.threatCount > 5) "\n+ ${result.threatCount - 5} more" else ""
+        val detail  = result.threats.take(5).joinToString("\n") { "  • [${it.riskLevel}] ${it.name}" }
+        val more    = if (result.threatCount > 5) "\n  + ${result.threatCount - 5} more threats" else ""
+        val delLine = if (deleted) "\n🗑️ File auto-deleted from device" else "\n⚠️ File still on device — delete manually"
 
         nm(context).notify(id,
             NotificationCompat.Builder(context, CH_SCAN)
-                .setContentTitle("$riskEmoji THREAT: ${result.fileName.take(40)}")
-                .setContentText("${result.threatCount} threat(s) — ${result.highestRisk} risk — upload blocked")
+                .setContentTitle("$riskEmoji MALICIOUS FILE BLOCKED")
+                .setContentText("${result.fileName.take(35)} — ${result.threatCount} threat(s) — ${result.highestRisk}")
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setColor(color)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(
-                    "File: ${result.fileName}\n" +
-                    "Risk: ${result.highestRisk}   Threats: ${result.threatCount}\n" +
-                    "Hash: ${result.fileHash.take(16)}…\n\n" +
-                    detail + more + "\n\n❌ Upload blocked for safety."
+                    "📄 ${result.fileName}\n" +
+                    "⚠️  Risk: ${result.highestRisk}   |   Threats: ${result.threatCount}\n" +
+                    "🔑 ${result.fileHash.take(16)}…\n\n" +
+                    detail + more +
+                    delLine
                 ))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
