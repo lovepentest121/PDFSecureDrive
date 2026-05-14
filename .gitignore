@@ -15,7 +15,6 @@ local.properties
 
 # Gradle caches
 .gradle/
-gradle/wrapper/gradle-wrapper.jar
 
 # APK outputs
 *.apk
