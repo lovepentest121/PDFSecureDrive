@@ -3,7 +3,7 @@ name: Build APK
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:  # Manual trigger button bhi hoga
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,9 +28,26 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PDFSecureDrive-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # Auto-create GitHub Release with APK — direct public download link
+      - name: Delete old release if exists
+        run: gh release delete latest-build --yes 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-build
+          name: "Latest APK Build"
+          body: "Auto-built APK — PDF Secure Drive with VirusTotal scanning"
+          files: app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
