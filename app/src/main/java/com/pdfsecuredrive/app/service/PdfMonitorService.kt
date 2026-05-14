@@ -7,9 +7,13 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
+import com.pdfsecuredrive.app.model.PdfRecord
 import com.pdfsecuredrive.app.notification.AppNotificationManager
 import com.pdfsecuredrive.app.pdf.PdfCoverExtractor
+import com.pdfsecuredrive.app.security.PdfScanner
 import com.pdfsecuredrive.app.security.SecurityEngine
+import com.pdfsecuredrive.app.storage.HistoryStore
+import java.util.UUID
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -120,6 +124,20 @@ class PdfMonitorService : Service() {
             if (result.isSafe) {
                 AppNotificationManager.showSafePrompt(applicationContext, result, path, coverFile?.absolutePath, id)
             } else {
+                // Save threat to history
+                HistoryStore.add(applicationContext, PdfRecord(
+                    id         = UUID.randomUUID().toString(),
+                    fileName   = file.name,
+                    aiTitle    = file.nameWithoutExtension,
+                    driveLink  = null,
+                    coverPath  = null,
+                    fileSize   = file.length(),
+                    fileHash   = PdfScanner.computeHash(file),
+                    scanDate   = System.currentTimeMillis(),
+                    status     = "THREAT",
+                    threatCount= result.threatCount,
+                    riskLevel  = result.highestRisk.name
+                ))
                 AppNotificationManager.showThreat(applicationContext, result, id)
             }
         }

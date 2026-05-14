@@ -1,66 +1,64 @@
 package com.pdfsecuredrive.app
 
 import android.Manifest
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
-import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.ImageButton
-import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import com.google.api.services.drive.DriveScopes
+import com.pdfsecuredrive.app.adapter.PdfHistoryAdapter
+import com.pdfsecuredrive.app.model.PdfRecord
 import com.pdfsecuredrive.app.security.RootDetector
 import com.pdfsecuredrive.app.service.PdfMonitorService
+import com.pdfsecuredrive.app.storage.HistoryStore
 import com.pdfsecuredrive.app.storage.SecurePreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    private var pulseAnimator: AnimatorSet? = null
+    private lateinit var adapter: PdfHistoryAdapter
+    private val records = mutableListOf<PdfRecord>()
 
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode != RESULT_OK && result.data == null) {
-            Toast.makeText(this, "Sign-in cancelled", Toast.LENGTH_SHORT).show()
-            return@registerForActivityResult
-        }
+        if (result.resultCode != RESULT_OK && result.data == null) { return@registerForActivityResult }
         try {
-            val account = GoogleSignIn
-                .getSignedInAccountFromIntent(result.data)
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 .getResult(ApiException::class.java)
             account?.email?.let { email ->
                 SecurePreferences.saveAccount(this, email)
                 SecurePreferences.setEnabled(this, true)
                 startMonitor()
-                renderConnected(email)
+                renderConnected()
             }
         } catch (e: ApiException) {
             val msg = when (e.statusCode) {
-                10   -> "SHA-1 mismatch — open Settings, copy SHA-1, update Google Cloud Console"
+                10   -> "SHA-1 mismatch — open Settings, copy SHA-1, update Cloud Console"
                 12500, 12501 -> "Sign-in cancelled"
-                7    -> "No internet connection"
-                else -> "Sign-in failed (code ${e.statusCode})"
+                7    -> "No internet"
+                else -> "Sign-in failed (${e.statusCode})"
             }
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -77,87 +75,136 @@ class MainActivity : AppCompatActivity() {
         }
 
         requestRuntimePermissions()
+        setupRecyclerView()
 
         val account = GoogleSignIn.getLastSignedInAccount(this)
         if (account != null && account.grantedScopes.any { it.scopeUri == DriveScopes.DRIVE_FILE }) {
-            renderConnected(account.email)
+            renderConnected()
             if (SecurePreferences.isEnabled(this)) startMonitor()
         } else {
             renderIdle()
         }
 
-        playEntranceAnimation()
-
         findViewById<Button>(R.id.btn_sign_in).setOnClickListener { startSignIn() }
-        findViewById<Button>(R.id.btn_sign_out).setOnClickListener { signOut() }
+        findViewById<Button>(R.id.btn_sign_in_empty).setOnClickListener { startSignIn() }
+        findViewById<ImageButton>(R.id.btn_logout).setOnClickListener { signOut() }
         findViewById<ImageButton>(R.id.btn_settings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
-    private fun playEntranceAnimation() {
-        listOf(
-            R.id.fl_shield to 0L,
-            R.id.ll_status_label to 80L,
-            R.id.card_main to 160L,
-            R.id.ll_chips to 240L
-        ).forEach { (id, delay) ->
-            val v = findViewById<View>(id)
-            v.translationY = 60f; v.alpha = 0f
-            AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(v, "translationY", 60f, 0f),
-                    ObjectAnimator.ofFloat(v, "alpha", 0f, 1f)
-                )
-                duration = 450; startDelay = delay
-                interpolator = DecelerateInterpolator(1.4f)
-                start()
+    override fun onResume() {
+        super.onResume()
+        refreshHistory()
+    }
+
+    private fun setupRecyclerView() {
+        adapter = PdfHistoryAdapter(records) { refreshHistory() }
+        val rv = findViewById<RecyclerView>(R.id.rv_history)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
+    }
+
+    private fun refreshHistory() {
+        val all = HistoryStore.getAll(this)
+        records.clear()
+        records.addAll(all)
+        adapter.notifyDataSetChanged()
+
+        val empty = all.isEmpty()
+        findViewById<View>(R.id.ll_empty).visibility    = if (empty) View.VISIBLE else View.GONE
+        findViewById<RecyclerView>(R.id.rv_history).visibility = if (empty) View.GONE else View.VISIBLE
+
+        val uploads = HistoryStore.totalUploads(this)
+        val scans   = HistoryStore.totalScans(this)
+
+        findViewById<TextView>(R.id.tv_intercepts).text = if (scans > 999) "${scans/1000}.${(scans%1000)/100}k" else "$scans"
+        findViewById<TextView>(R.id.tv_secured).text    = "$uploads"
+        findViewById<TextView>(R.id.tv_secured_badge).text = "$uploads SECURED"
+    }
+
+    private fun renderConnected() {
+        val account = GoogleSignIn.getLastSignedInAccount(this)
+        val email = account?.email ?: SecurePreferences.getAccount(this) ?: "Connected"
+        val masked = "${email.take(3)}***${email.dropWhile { it != '@' }}"
+
+        // Top bar
+        findViewById<TextView>(R.id.tv_interceptor).apply {
+            text = "INTERCEPTOR: ACTIVE"
+            setTextColor(0xFF10B981.toInt())
+        }
+        findViewById<View>(R.id.v_interceptor_dot).setBackgroundResource(R.drawable.dot_green)
+        findViewById<Button>(R.id.btn_sign_in).visibility    = View.GONE
+        findViewById<ImageButton>(R.id.btn_logout).visibility = View.VISIBLE
+
+        // Empty state
+        val empty = HistoryStore.getAll(this).isEmpty()
+        if (empty) {
+            findViewById<TextView>(R.id.tv_empty_title).text = "Monitoring active"
+            findViewById<TextView>(R.id.tv_empty_sub).text = "$masked\n\nDownload any PDF to see it here"
+            findViewById<Button>(R.id.btn_sign_in_empty).visibility = View.GONE
+        }
+
+        // Drive usage
+        loadDriveUsage()
+        refreshHistory()
+    }
+
+    private fun renderIdle() {
+        findViewById<TextView>(R.id.tv_interceptor).apply {
+            text = "INTERCEPTOR: OFF"
+            setTextColor(0xFF64748B.toInt())
+        }
+        findViewById<Button>(R.id.btn_sign_in).visibility    = View.VISIBLE
+        findViewById<ImageButton>(R.id.btn_logout).visibility = View.GONE
+        findViewById<TextView>(R.id.tv_drive_used).text = "—"
+        findViewById<TextView>(R.id.tv_drive_quota).text = "CONNECT TO SEE USAGE"
+        findViewById<ProgressBar>(R.id.pb_drive).progress = 0
+
+        val empty = HistoryStore.getAll(this).isEmpty()
+        if (empty) {
+            findViewById<Button>(R.id.btn_sign_in_empty).visibility = View.VISIBLE
+        }
+        refreshHistory()
+    }
+
+    private fun loadDriveUsage() {
+        val account = SecurePreferences.getAccount(this) ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val credential = com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+                    .usingOAuth2(this@MainActivity, listOf(DriveScopes.DRIVE_FILE))
+                    .apply { selectedAccountName = account }
+                val drive = com.google.api.services.drive.Drive.Builder(
+                    com.google.api.client.http.javanet.NetHttpTransport(),
+                    com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
+                    credential
+                ).setApplicationName("PDFSecureDrive").build()
+
+                val about = drive.about().get().setFields("storageQuota").execute()
+                val quota = about.storageQuota
+                val used  = quota.usage ?: 0L
+                val total = quota.limit ?: (15L * 1024 * 1024 * 1024)
+
+                withContext(Dispatchers.Main) {
+                    val usedGb  = used.toFloat() / (1024 * 1024 * 1024)
+                    val totalGb = total.toFloat() / (1024 * 1024 * 1024)
+                    val pct     = ((used.toFloat() / total) * 100).toInt().coerceIn(0, 100)
+                    findViewById<TextView>(R.id.tv_drive_used).text  = "%.1f".format(usedGb)
+                    findViewById<TextView>(R.id.tv_drive_quota).text = "USED OF %.0f GB ALLOTTED".format(totalGb)
+                    findViewById<ProgressBar>(R.id.pb_drive).progress = pct
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    findViewById<TextView>(R.id.tv_drive_quota).text = "USAGE UNAVAILABLE"
+                }
             }
-        }
-    }
-
-    private fun startPulse() {
-        val pulse = findViewById<View>(R.id.v_pulse)
-        pulseAnimator?.cancel()
-        pulseAnimator = AnimatorSet().apply {
-            val scale = ObjectAnimator.ofPropertyValuesHolder(pulse,
-                PropertyValuesHolder.ofFloat("scaleX", 0.8f, 1.6f),
-                PropertyValuesHolder.ofFloat("scaleY", 0.8f, 1.6f),
-                PropertyValuesHolder.ofFloat("alpha",  0.5f, 0f)
-            ).apply {
-                duration = 1800
-                repeatCount = ValueAnimator.INFINITE
-                interpolator = DecelerateInterpolator()
-            }
-            play(scale)
-            start()
-        }
-    }
-
-    private fun stopPulse() {
-        pulseAnimator?.cancel()
-        pulseAnimator = null
-        findViewById<View>(R.id.v_pulse).alpha = 0f
-    }
-
-    private fun requestRuntimePermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED) {
-            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
-            storageLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
 
     private fun startSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE_FILE))
-            .build()
+            .requestEmail().requestScopes(Scope(DriveScopes.DRIVE_FILE)).build()
         signInLauncher.launch(GoogleSignIn.getClient(this, gso).signInIntent)
     }
 
@@ -174,49 +221,12 @@ class MainActivity : AppCompatActivity() {
         startForegroundService(Intent(this, PdfMonitorService::class.java))
     }
 
-    private fun renderConnected(email: String?) {
-        val masked = email?.let { "${it.take(3)}***${it.dropWhile { c -> c != '@' }}" } ?: "Connected"
-        setCardBackground(active = true)
-        startPulse()
-        findViewById<View>(R.id.v_status_dot).visibility = View.VISIBLE
-        findViewById<TextView>(R.id.tv_status_label).apply {
-            text = "MONITORING ACTIVE"
-            setTextColor(0xFF00E676.toInt())
-        }
-        findViewById<TextView>(R.id.tv_shield).text = "✅"
-        findViewById<TextView>(R.id.tv_status).apply {
-            text = "$masked\n\nAll PDF downloads are being scanned\nautomatically in the background"
-            setTextColor(0xFFB0BBCC.toInt())
-        }
-        findViewById<Button>(R.id.btn_sign_in).visibility  = View.GONE
-        findViewById<Button>(R.id.btn_sign_out).visibility = View.VISIBLE
-    }
-
-    private fun renderIdle() {
-        setCardBackground(active = false)
-        stopPulse()
-        findViewById<View>(R.id.v_status_dot).visibility = View.INVISIBLE
-        findViewById<TextView>(R.id.tv_status_label).apply {
-            text = "INACTIVE"
-            setTextColor(0xFF6B7A99.toInt())
-        }
-        findViewById<TextView>(R.id.tv_shield).text = "🛡️"
-        findViewById<TextView>(R.id.tv_status).apply {
-            text = "Connect Google Drive to start\nautomatically scanning all PDF downloads"
-            setTextColor(0xFFB0BBCC.toInt())
-        }
-        findViewById<Button>(R.id.btn_sign_in).visibility  = View.VISIBLE
-        findViewById<Button>(R.id.btn_sign_out).visibility = View.GONE
-    }
-
-    private fun setCardBackground(active: Boolean) {
-        val res = if (active) R.drawable.card_glow_active else R.drawable.card_glow_idle
-        findViewById<LinearLayout>(R.id.ll_card_inner).background =
-            ContextCompat.getDrawable(this, res)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        pulseAnimator?.cancel()
+    private fun requestRuntimePermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+            storageLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 }

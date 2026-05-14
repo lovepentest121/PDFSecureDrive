@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/history_item_bg"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- PDF icon box -->
+    <LinearLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:background="@drawable/chip_bg"
+        android:layout_marginEnd="12dp">
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_pdf"
+            android:contentDescription="PDF" />
+    </LinearLayout>
+
+    <!-- File info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_filename"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="document.pdf"
+            android:textColor="#FFE2E8F0"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="middle" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="3dp">
+
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="14/05/2026"
+                android:textColor="#FF64748B"
+                android:textSize="10sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • "
+                android:textColor="#FF3B5B8E"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/tv_sync_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DRIVE SYNC"
+                android:textColor="#FF3B5B8E"
+                android:textSize="9sp"
+                android:letterSpacing="0.06" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Status badge -->
+    <TextView
+        android:id="@+id/tv_status_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="UPLOADED"
+        android:textColor="#FF10B981"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.06"
+        android:background="@drawable/badge_uploaded"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp" />
+
+    <!-- Action buttons -->
+    <ImageButton
+        android:id="@+id/btn_copy"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_copy"
+        android:background="@drawable/chip_bg"
+        android:padding="5dp"
+        android:contentDescription="Copy link"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btn_open"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_open"
+        android:background="@drawable/chip_bg"
+        android:padding="5dp"
+        android:contentDescription="Open"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btn_delete"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_delete"
+        android:background="@drawable/chip_bg"
+        android:padding="5dp"
+        android:contentDescription="Delete" />
+
+</LinearLayout>
