@@ -8,9 +8,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -109,6 +112,16 @@ class MainActivity : AppCompatActivity() {
         val rv = findViewById<RecyclerView>(R.id.rv_history)
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
+
+        // Wire up search
+        val et = findViewById<EditText>(R.id.et_search)
+        et.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                adapter.filter(s?.toString() ?: "")
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 
     private fun refreshHistory() {
@@ -117,8 +130,9 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
 
         val empty = all.isEmpty()
-        findViewById<View>(R.id.ll_empty).visibility        = if (empty) View.VISIBLE else View.GONE
-        findViewById<RecyclerView>(R.id.rv_history).visibility = if (empty) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.ll_empty).visibility           = if (empty) View.VISIBLE else View.GONE
+        findViewById<RecyclerView>(R.id.rv_history).visibility = if (empty) View.GONE  else View.VISIBLE
+        findViewById<View>(R.id.ll_search).visibility          = if (empty) View.GONE  else View.VISIBLE
 
         val uploads = HistoryStore.totalUploads(this)
         val scans   = HistoryStore.totalScans(this)

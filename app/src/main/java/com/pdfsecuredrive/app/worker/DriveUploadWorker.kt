@@ -57,6 +57,7 @@ class DriveUploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     aiTitle   = aiTitle,
                     driveLink = r.shareLink,
                     coverPath = coverPath,
+                    filePath  = path,
                     fileSize  = file.length(),
                     fileHash  = fileHash,
                     scanDate  = System.currentTimeMillis(),

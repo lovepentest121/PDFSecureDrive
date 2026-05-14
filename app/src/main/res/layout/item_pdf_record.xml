@@ -4,67 +4,101 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:gravity="center_vertical"
     android:background="@drawable/history_item_bg"
-    android:padding="12dp"
+    android:padding="10dp"
     android:layout_marginBottom="8dp"
     android:clickable="true"
     android:focusable="true">
 
-    <!-- PDF icon box -->
-    <LinearLayout
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:gravity="center"
-        android:background="@drawable/chip_bg"
-        android:layout_marginEnd="12dp">
-        <ImageView
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:src="@drawable/ic_pdf"
-            android:contentDescription="PDF" />
-    </LinearLayout>
+    <!-- Cover thumbnail -->
+    <FrameLayout
+        android:layout_width="52dp"
+        android:layout_height="68dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/cover_frame_bg"
+        android:clipToOutline="true">
 
-    <!-- File info -->
+        <ImageView
+            android:id="@+id/iv_cover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Cover"
+            android:visibility="gone" />
+
+        <!-- Fallback PDF icon when no cover -->
+        <LinearLayout
+            android:id="@+id/ll_cover_fallback"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_pdf"
+                android:contentDescription="PDF" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PDF"
+                android:textColor="#FF3B5B8E"
+                android:textSize="8sp"
+                android:layout_marginTop="3dp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Content column -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical">
 
+        <!-- AI Title -->
+        <TextView
+            android:id="@+id/tv_ai_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Document Title"
+            android:textColor="#FFE2E8F0"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Filename -->
         <TextView
             android:id="@+id/tv_filename"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="document.pdf"
-            android:textColor="#FFE2E8F0"
-            android:textSize="12sp"
-            android:textStyle="bold"
+            android:textColor="#FF64748B"
+            android:textSize="10sp"
             android:maxLines="1"
-            android:ellipsize="middle" />
+            android:ellipsize="middle"
+            android:layout_marginTop="2dp" />
 
+        <!-- Date + Sync label -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:layout_marginTop="3dp">
-
             <TextView
                 android:id="@+id/tv_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="14/05/2026"
-                android:textColor="#FF64748B"
-                android:textSize="10sp" />
-
+                android:textColor="#FF475569"
+                android:textSize="9sp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" • "
-                android:textColor="#FF3B5B8E"
-                android:textSize="10sp" />
-
+                android:text=" · "
+                android:textColor="#FF334155"
+                android:textSize="9sp" />
             <TextView
                 android:id="@+id/tv_sync_label"
                 android:layout_width="wrap_content"
@@ -72,54 +106,76 @@
                 android:text="DRIVE SYNC"
                 android:textColor="#FF3B5B8E"
                 android:textSize="9sp"
-                android:letterSpacing="0.06" />
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+        <!-- Action buttons row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="6dp">
+
+            <!-- Copy title -->
+            <ImageButton
+                android:id="@+id/btn_copy_title"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_copy_title"
+                android:background="@drawable/chip_bg"
+                android:padding="5dp"
+                android:contentDescription="Copy title"
+                android:layout_marginEnd="4dp" />
+
+            <!-- Copy Drive link -->
+            <ImageButton
+                android:id="@+id/btn_copy"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_copy"
+                android:background="@drawable/chip_bg"
+                android:padding="5dp"
+                android:contentDescription="Copy link"
+                android:layout_marginEnd="4dp" />
+
+            <!-- Open in Drive -->
+            <ImageButton
+                android:id="@+id/btn_open"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_open"
+                android:background="@drawable/chip_bg"
+                android:padding="5dp"
+                android:contentDescription="Open in Drive"
+                android:layout_marginEnd="4dp" />
+
+            <!-- Delete -->
+            <ImageButton
+                android:id="@+id/btn_delete"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_delete"
+                android:background="@drawable/chip_bg"
+                android:padding="5dp"
+                android:contentDescription="Delete" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Status badge -->
+    <!-- Status badge (right aligned, vertically centered) -->
     <TextView
         android:id="@+id/tv_status_badge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="UPLOADED"
+        android:layout_gravity="center_vertical"
+        android:text="SAFE"
         android:textColor="#FF10B981"
-        android:textSize="9sp"
+        android:textSize="8sp"
         android:textStyle="bold"
-        android:letterSpacing="0.06"
+        android:letterSpacing="0.05"
         android:background="@drawable/badge_uploaded"
-        android:paddingHorizontal="8dp"
+        android:paddingHorizontal="7dp"
         android:paddingVertical="4dp"
-        android:layout_marginStart="6dp"
-        android:layout_marginEnd="6dp" />
-
-    <!-- Action buttons -->
-    <ImageButton
-        android:id="@+id/btn_copy"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:src="@drawable/ic_copy"
-        android:background="@drawable/chip_bg"
-        android:padding="5dp"
-        android:contentDescription="Copy link"
-        android:layout_marginEnd="4dp" />
-
-    <ImageButton
-        android:id="@+id/btn_open"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:src="@drawable/ic_open"
-        android:background="@drawable/chip_bg"
-        android:padding="5dp"
-        android:contentDescription="Open"
-        android:layout_marginEnd="4dp" />
-
-    <ImageButton
-        android:id="@+id/btn_delete"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:src="@drawable/ic_delete"
-        android:background="@drawable/chip_bg"
-        android:padding="5dp"
-        android:contentDescription="Delete" />
+        android:layout_marginStart="6dp" />
 
 </LinearLayout>
