@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">PDF Secure Drive</string>
+    <string name="sign_in">Sign in with Google</string>
+    <string name="sign_out">Sign Out &amp; Stop</string>
+    <string name="status_idle">Sign in with Google to start monitoring PDF downloads</string>
+    <string name="root_warning">⚠️ Rooted device detected — security may be compromised</string>
+    <string name="notif_monitor_title">PDF Security Monitor</string>
+    <string name="notif_monitor_text">Watching all downloads for PDF files</string>
+    <string name="permission_storage">Storage permission is needed to scan downloaded PDFs</string>
+    <string name="permission_notification">Notification permission is needed to alert you about PDFs</string>
+</resources>

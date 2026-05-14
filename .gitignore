@@ -1,0 +1,22 @@
+# NEVER commit these — secrets / credentials
+google-services.json
+*.jks
+*.keystore
+local.properties
+*.env
+
+# Build outputs
+/build
+/app/build
+/.gradle
+/.idea
+*.iml
+.DS_Store
+
+# Gradle caches
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# APK outputs
+*.apk
+*.aab

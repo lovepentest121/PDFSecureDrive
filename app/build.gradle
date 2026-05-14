@@ -1,0 +1,91 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'com.pdfsecuredrive.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.pdfsecuredrive.app"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            // Read from environment — NEVER hardcode keystore credentials
+            storeFile file(System.getenv("KEYSTORE_PATH") ?: "debug.jks")
+            storePassword System.getenv("KEYSTORE_PASS") ?: "android"
+            keyAlias System.getenv("KEY_ALIAS") ?: "key0"
+            keyPassword System.getenv("KEY_PASS") ?: "android"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            debuggable false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+
+    packaging {
+        resources {
+            excludes += [
+                'META-INF/DEPENDENCIES',
+                'META-INF/LICENSE',
+                'META-INF/LICENSE.txt',
+                'META-INF/NOTICE',
+                'META-INF/NOTICE.txt',
+                'META-INF/INDEX.LIST'
+            ]
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // AES-256 encrypted storage
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
+    // Background work
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+
+    // Google Sign-In + Drive (no client_secret for Android)
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    implementation 'com.google.api-client:google-api-client-android:2.2.0'
+    implementation 'com.google.apis:google-api-services-drive:v3-rev20231128-2.0.0'
+    implementation 'com.google.http-client:google-http-client-gson:1.43.3'
+
+    // PDF static analysis — zero execution engine
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
+
+    // Lifecycle
+    implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+}

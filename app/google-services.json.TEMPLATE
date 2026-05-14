@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "YOUR_PROJECT_ID"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_HASH",
+        "android_client_info": {
+          "package_name": "com.pdfsecuredrive.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pdfsecuredrive.app",
+            "certificate_hash": "YOUR_SHA1_FINGERPRINT"
+          }
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
+INSTRUCTIONS:
+1. Go to https://console.cloud.google.com
+2. Create new project "PDFSecureDrive"
+3. APIs & Services → Enable "Google Drive API"
+4. APIs & Services → Credentials → Create → OAuth 2.0 Client ID → Android
+5. Package name: com.pdfsecuredrive.app
+6. SHA-1 fingerprint (get via):
+   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+7. Download the real google-services.json and rename it (remove .TEMPLATE)
