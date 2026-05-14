@@ -4,131 +4,160 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
+    android:background="#FF080C14"
     android:filterTouchesWhenObscured="true">
 
-    <!-- Settings button top-right -->
-    <ImageButton
-        android:id="@+id/btn_settings"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@color/bg_card"
-        android:src="@drawable/ic_settings"
-        android:contentDescription="Settings"
-        android:padding="10dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="20dp"
-        android:layout_marginEnd="20dp" />
-
-    <!-- App title top-left -->
+    <!-- Top bar -->
     <TextView
-        android:id="@+id/tv_app_title"
+        android:id="@+id/tv_app_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="PDF Secure Drive"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginTop="28dp"
-        android:layout_marginStart="20dp"
+        android:textColor="#FFE8EDF3"
+        android:letterSpacing="0.04"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btn_settings" />
 
-    <TextView
-        android:id="@+id/tv_subtitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Scan · Protect · Upload"
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="2dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_app_title"
-        app:layout_constraintStart_toStartOf="parent" />
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/chip_bg"
+        android:src="@drawable/ic_settings"
+        android:contentDescription="Settings"
+        android:padding="8dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Guideline for vertical centering -->
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guide_v_center"
+    <!-- Shield + Pulse section -->
+    <FrameLayout
+        android:id="@+id/fl_shield"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:layout_marginTop="36dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_app_name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Pulse ring (animated when active) -->
+        <View
+            android:id="@+id/v_pulse"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/circle_pulse"
+            android:alpha="0" />
+
+        <!-- Shield icon -->
+        <TextView
+            android:id="@+id/tv_shield"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="🛡️"
+            android:textSize="64sp" />
+    </FrameLayout>
+
+    <!-- Status dot + label -->
+    <LinearLayout
+        android:id="@+id/ll_status_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.48" />
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/fl_shield"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Main Status Card (3D) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_status"
+        <View
+            android:id="@+id/v_status_dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/dot_green"
+            android:visibility="invisible"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:id="@+id/tv_status_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="INACTIVE"
+            android:textSize="11sp"
+            android:letterSpacing="0.12"
+            android:textColor="#FF6B7A99" />
+    </LinearLayout>
+
+    <!-- Main Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_main"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="16dp"
-        app:cardBackgroundColor="@color/bg_card"
-        app:strokeWidth="1dp"
-        app:strokeColor="@color/divider"
-        app:layout_constraintTop_toTopOf="@id/guide_v_center"
-        app:layout_constraintBottom_toBottomOf="@id/guide_v_center"
+        android:layout_marginTop="20dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="20dp"
+        app:cardBackgroundColor="#00000000"
+        app:layout_constraintTop_toBottomOf="@id/ll_status_label"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
+            android:id="@+id/ll_card_inner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:padding="28dp">
-
-            <TextView
-                android:id="@+id/tv_shield_icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🛡️"
-                android:textSize="52sp" />
+            android:background="@drawable/card_glow_idle"
+            android:padding="28dp"
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/tv_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sign in to start monitoring"
-                android:textSize="15sp"
-                android:textColor="@color/text_primary"
+                android:text="Connect Google Drive to start\nautomatically scanning all PDF downloads"
+                android:textSize="14sp"
+                android:textColor="#FFB0BBCC"
                 android:gravity="center"
-                android:layout_marginTop="12dp"
-                android:lineSpacingMultiplier="1.5" />
+                android:lineSpacingMultiplier="1.6" />
 
-            <!-- Sign In Button -->
             <Button
                 android:id="@+id/btn_sign_in"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:text="Connect Google Drive"
-                android:background="@drawable/btn_blue_bg"
-                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_primary"
+                android:textColor="#FFFFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:paddingHorizontal="28dp"
+                android:letterSpacing="0.02"
+                android:paddingHorizontal="32dp"
                 android:layout_marginTop="20dp"
                 android:stateListAnimator="@null"
-                android:elevation="6dp" />
+                android:elevation="8dp" />
 
-            <!-- Sign Out Button -->
             <Button
                 android:id="@+id/btn_sign_out"
                 android:layout_width="wrap_content"
-                android:layout_height="44dp"
+                android:layout_height="40dp"
                 android:text="Disconnect"
-                android:background="@color/bg_dark"
-                android:textColor="@color/error_red"
+                android:background="@android:color/transparent"
+                android:textColor="#FFCF6679"
                 android:textSize="13sp"
-                android:paddingHorizontal="24dp"
-                android:layout_marginTop="16dp"
+                android:paddingHorizontal="20dp"
+                android:layout_marginTop="12dp"
                 android:visibility="gone"
                 android:stateListAnimator="@null" />
 
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.cardview.widget.CardView>
 
     <!-- Root Warning -->
     <TextView
@@ -136,69 +165,63 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/root_warning"
-        android:textColor="@color/threat_high"
-        android:textSize="12sp"
+        android:textColor="#FFFF6D00"
+        android:textSize="11sp"
         android:gravity="center"
         android:visibility="gone"
         android:padding="10dp"
-        android:background="@color/bg_card"
+        android:background="#1AFF6D00"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/card_status"
+        app:layout_constraintTop_toBottomOf="@id/card_main"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Bottom feature row (3 chips) -->
+    <!-- Bottom feature chips -->
     <LinearLayout
-        android:id="@+id/ll_features"
+        android:id="@+id/ll_chips"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.chip.Chip
+        <TextView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:layout_weight="1"
             android:text="🔍 Scan"
-            android:textColor="@color/text_secondary"
+            android:textColor="#FF6B8EBF"
             android:textSize="11sp"
-            app:chipBackgroundColor="@color/bg_card"
-            app:chipStrokeWidth="1dp"
-            app:chipStrokeColor="@color/divider"
-            android:layout_marginHorizontal="4dp"
-            android:clickable="false" />
+            android:gravity="center"
+            android:background="@drawable/chip_bg"
+            android:layout_marginHorizontal="4dp" />
 
-        <com.google.android.material.chip.Chip
+        <TextView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="☁️ Upload"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            app:chipBackgroundColor="@color/bg_card"
-            app:chipStrokeWidth="1dp"
-            app:chipStrokeColor="@color/divider"
-            android:layout_marginHorizontal="4dp"
-            android:clickable="false" />
-
-        <com.google.android.material.chip.Chip
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:layout_weight="1"
             android:text="🛡️ Block"
-            android:textColor="@color/text_secondary"
+            android:textColor="#FF6B8EBF"
             android:textSize="11sp"
-            app:chipBackgroundColor="@color/bg_card"
-            app:chipStrokeWidth="1dp"
-            app:chipStrokeColor="@color/divider"
-            android:layout_marginHorizontal="4dp"
-            android:clickable="false" />
+            android:gravity="center"
+            android:background="@drawable/chip_bg"
+            android:layout_marginHorizontal="4dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:text="☁️ Upload"
+            android:textColor="#FF6B8EBF"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:background="@drawable/chip_bg"
+            android:layout_marginHorizontal="4dp" />
 
     </LinearLayout>
 

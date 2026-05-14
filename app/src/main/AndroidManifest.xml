@@ -57,11 +57,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- Correct action: android.intent.action.DOWNLOAD_COMPLETE -->
         <receiver
             android:name=".receiver.DownloadCompleteReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.app.action.DOWNLOAD_COMPLETE" />
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
             </intent-filter>
         </receiver>
 

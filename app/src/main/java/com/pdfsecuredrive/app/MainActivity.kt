@@ -3,6 +3,8 @@ package com.pdfsecuredrive.app
 import android.Manifest
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,10 +14,12 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -28,6 +32,8 @@ import com.pdfsecuredrive.app.storage.SecurePreferences
 
 class MainActivity : AppCompatActivity() {
 
+    private var pulseAnimator: AnimatorSet? = null
+
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -39,38 +45,30 @@ class MainActivity : AppCompatActivity() {
             val account = GoogleSignIn
                 .getSignedInAccountFromIntent(result.data)
                 .getResult(ApiException::class.java)
-
             account?.email?.let { email ->
                 SecurePreferences.saveAccount(this, email)
                 SecurePreferences.setEnabled(this, true)
                 startMonitor()
                 renderConnected(email)
-                animateCard(true)
             }
         } catch (e: ApiException) {
             val msg = when (e.statusCode) {
-                10   -> "Setup error: SHA-1 not registered.\nOpen Settings → copy SHA-1 → add to Google Cloud Console"
+                10   -> "SHA-1 mismatch — open Settings, copy SHA-1, update Google Cloud Console"
                 12500, 12501 -> "Sign-in cancelled"
-                7    -> "Network error — check connection"
+                7    -> "No internet connection"
                 else -> "Sign-in failed (code ${e.statusCode})"
             }
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Sign-in error: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
-    private val notifPermLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { }
-
-    private val storageLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { }
+    private val notifPermLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val storageLauncher   = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_main)
 
@@ -80,11 +78,9 @@ class MainActivity : AppCompatActivity() {
 
         requestRuntimePermissions()
 
-        // Restore state
         val account = GoogleSignIn.getLastSignedInAccount(this)
         if (account != null && account.grantedScopes.any { it.scopeUri == DriveScopes.DRIVE_FILE }) {
             renderConnected(account.email)
-            animateCard(true)
             if (SecurePreferences.isEnabled(this)) startMonitor()
         } else {
             renderIdle()
@@ -100,26 +96,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playEntranceAnimation() {
-        val card = findViewById<View>(R.id.card_status)
-        card.translationY = 120f
-        card.alpha = 0f
-        val slide = ObjectAnimator.ofFloat(card, "translationY", 120f, 0f)
-        val fade  = ObjectAnimator.ofFloat(card, "alpha", 0f, 1f)
-        AnimatorSet().apply {
-            playTogether(slide, fade)
-            duration = 500
-            interpolator = DecelerateInterpolator(1.5f)
-            startDelay = 80
+        listOf(
+            R.id.fl_shield to 0L,
+            R.id.ll_status_label to 80L,
+            R.id.card_main to 160L,
+            R.id.ll_chips to 240L
+        ).forEach { (id, delay) ->
+            val v = findViewById<View>(id)
+            v.translationY = 60f; v.alpha = 0f
+            AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(v, "translationY", 60f, 0f),
+                    ObjectAnimator.ofFloat(v, "alpha", 0f, 1f)
+                )
+                duration = 450; startDelay = delay
+                interpolator = DecelerateInterpolator(1.4f)
+                start()
+            }
+        }
+    }
+
+    private fun startPulse() {
+        val pulse = findViewById<View>(R.id.v_pulse)
+        pulseAnimator?.cancel()
+        pulseAnimator = AnimatorSet().apply {
+            val scale = ObjectAnimator.ofPropertyValuesHolder(pulse,
+                PropertyValuesHolder.ofFloat("scaleX", 0.8f, 1.6f),
+                PropertyValuesHolder.ofFloat("scaleY", 0.8f, 1.6f),
+                PropertyValuesHolder.ofFloat("alpha",  0.5f, 0f)
+            ).apply {
+                duration = 1800
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = DecelerateInterpolator()
+            }
+            play(scale)
             start()
         }
     }
 
-    private fun animateCard(active: Boolean) {
-        val card = findViewById<View>(R.id.card_status)
-        val targetAlpha = if (active) 1f else 0.85f
-        ObjectAnimator.ofFloat(card, "translationZ",
-            card.translationZ, if (active) 24f else 8f
-        ).apply { duration = 300; start() }
+    private fun stopPulse() {
+        pulseAnimator?.cancel()
+        pulseAnimator = null
+        findViewById<View>(R.id.v_pulse).alpha = 0f
     }
 
     private fun requestRuntimePermissions() {
@@ -149,7 +167,6 @@ class MainActivity : AppCompatActivity() {
                 stopService(Intent(this, PdfMonitorService::class.java))
                 SecurePreferences.clearAll(this)
                 renderIdle()
-                animateCard(false)
             }
     }
 
@@ -159,17 +176,47 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderConnected(email: String?) {
         val masked = email?.let { "${it.take(3)}***${it.dropWhile { c -> c != '@' }}" } ?: "Connected"
-        findViewById<TextView>(R.id.tv_shield_icon).text = "✅"
-        findViewById<TextView>(R.id.tv_status).text =
-            "Monitoring active\n\n$masked\n\nAll PDF downloads scanned automatically"
+        setCardBackground(active = true)
+        startPulse()
+        findViewById<View>(R.id.v_status_dot).visibility = View.VISIBLE
+        findViewById<TextView>(R.id.tv_status_label).apply {
+            text = "MONITORING ACTIVE"
+            setTextColor(0xFF00E676.toInt())
+        }
+        findViewById<TextView>(R.id.tv_shield).text = "✅"
+        findViewById<TextView>(R.id.tv_status).apply {
+            text = "$masked\n\nAll PDF downloads are being scanned\nautomatically in the background"
+            setTextColor(0xFFB0BBCC.toInt())
+        }
         findViewById<Button>(R.id.btn_sign_in).visibility  = View.GONE
         findViewById<Button>(R.id.btn_sign_out).visibility = View.VISIBLE
     }
 
     private fun renderIdle() {
-        findViewById<TextView>(R.id.tv_shield_icon).text = "🛡️"
-        findViewById<TextView>(R.id.tv_status).text = "Connect your Google account\nto start monitoring PDF downloads"
+        setCardBackground(active = false)
+        stopPulse()
+        findViewById<View>(R.id.v_status_dot).visibility = View.INVISIBLE
+        findViewById<TextView>(R.id.tv_status_label).apply {
+            text = "INACTIVE"
+            setTextColor(0xFF6B7A99.toInt())
+        }
+        findViewById<TextView>(R.id.tv_shield).text = "🛡️"
+        findViewById<TextView>(R.id.tv_status).apply {
+            text = "Connect Google Drive to start\nautomatically scanning all PDF downloads"
+            setTextColor(0xFFB0BBCC.toInt())
+        }
         findViewById<Button>(R.id.btn_sign_in).visibility  = View.VISIBLE
         findViewById<Button>(R.id.btn_sign_out).visibility = View.GONE
+    }
+
+    private fun setCardBackground(active: Boolean) {
+        val res = if (active) R.drawable.card_glow_active else R.drawable.card_glow_idle
+        findViewById<LinearLayout>(R.id.ll_card_inner).background =
+            ContextCompat.getDrawable(this, res)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        pulseAnimator?.cancel()
     }
 }
