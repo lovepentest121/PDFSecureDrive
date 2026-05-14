@@ -30,6 +30,14 @@ class DriveUploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             return@withContext Result.failure()
         }
 
+        // Final re-verify before upload — extension + size sanity check
+        if (!file.name.lowercase().endsWith(".pdf") || file.length() < 100) {
+            AppNotificationManager.showUploadFailed(
+                applicationContext, file.name, "File failed final safety check", notifId + 5000
+            )
+            return@withContext Result.failure()
+        }
+
         val account = SecurePreferences.getAccount(applicationContext) ?: run {
             AppNotificationManager.showUploadFailed(
                 applicationContext, file.name, "Not signed in to Google", notifId + 5000
