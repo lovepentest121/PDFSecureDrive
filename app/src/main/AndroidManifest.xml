@@ -45,6 +45,30 @@
             android:windowSoftInputMode="stateHidden" />
         <activity android:name=".PdfDetailActivity" android:exported="false" />
 
+        <!-- PDF Intercept: scans file before opening, appears in PDF open chooser -->
+        <activity
+            android:name=".PdfInterceptActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:launchMode="singleTask">
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:mimeType="application/pdf" />
+            </intent-filter>
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file" android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+
         <service android:name=".service.PdfMonitorService" android:exported="false"
             android:foregroundServiceType="dataSync" android:stopWithTask="false" />
 

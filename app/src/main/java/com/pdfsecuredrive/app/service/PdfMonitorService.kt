@@ -138,13 +138,22 @@ class PdfMonitorService : Service() {
         if (scanned.size > 200) scanned.entries.removeIf { now - it.value > 120_000 }
 
         scope.launch {
-            delay(2_000) // wait for write to finish
+            val id = idCounter.getAndIncrement()
+            val quickName = uriStr.substringAfterLast("/").substringAfterLast("%2F").ifBlank { "PDF" }
 
-            val file = resolveToFile(uriStr) ?: return@launch
-            if (!file.exists() || file.length() < 100) return@launch
+            // Show instant "Scanning…" notification — user sees it immediately
+            AppNotificationManager.showScanning(applicationContext, quickName, id)
+
+            delay(400) // brief wait for file write to flush
+
+            val file = resolveToFile(uriStr) ?: run {
+                AppNotificationManager.dismiss(applicationContext, id); return@launch
+            }
+            if (!file.exists() || file.length() < 100) {
+                AppNotificationManager.dismiss(applicationContext, id); return@launch
+            }
 
             val result = SecurityEngine.scanFile(applicationContext, file)
-            val id = idCounter.getAndIncrement()
             val coverFile = if (result.isValidPdf) PdfCoverExtractor.extract(file, cacheDir) else null
 
             if (result.isSafe) {

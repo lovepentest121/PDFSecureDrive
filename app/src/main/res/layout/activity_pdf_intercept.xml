@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="28dp"
+    android:background="@drawable/stat_card_blue">
+
+    <!-- Shield icon -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🛡️"
+        android:textSize="44sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- App name -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PDF SECURE DRIVE"
+        android:textColor="#FF3B82F6"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.15"
+        android:layout_marginBottom="16dp" />
+
+    <!-- File name -->
+    <TextView
+        android:id="@+id/tv_intercept_file"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="document.pdf"
+        android:textColor="#FFE2E8F0"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="2"
+        android:ellipsize="middle"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Progress bar -->
+    <ProgressBar
+        android:id="@+id/pb_intercept"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminateTint="#FF3B82F6"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Status text -->
+    <TextView
+        android:id="@+id/tv_intercept_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔍 Scanning for threats…"
+        android:textColor="#FF94A3B8"
+        android:textSize="12sp"
+        android:gravity="center" />
+
+</LinearLayout>

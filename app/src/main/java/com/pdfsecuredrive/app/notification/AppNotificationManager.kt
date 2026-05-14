@@ -57,6 +57,20 @@ object AppNotificationManager {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
 
+    fun showScanning(context: Context, fileName: String, id: Int) {
+        nm(context).notify(id,
+            NotificationCompat.Builder(context, CH_SCAN)
+                .setContentTitle("🔍 Scanning: ${fileName.take(40)}")
+                .setContentText("Checking for threats…")
+                .setSmallIcon(android.R.drawable.ic_menu_search)
+                .setProgress(0, 0, true)   // indeterminate progress
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .build()
+        )
+    }
+
     fun showSafePrompt(context: Context, result: ScanResult, filePath: String, coverPath: String?, id: Int) {
         val uploadPi = broadcast(context, id, ACTION_UPLOAD) {
             putExtra(EXTRA_FILE_PATH, filePath)
