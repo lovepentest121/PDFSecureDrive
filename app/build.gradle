@@ -16,12 +16,12 @@ android {
     }
 
     signingConfigs {
-        release {
-            // Read from environment — NEVER hardcode keystore credentials
-            storeFile file(System.getenv("KEYSTORE_PATH") ?: "debug.jks")
-            storePassword System.getenv("KEYSTORE_PASS") ?: "android"
-            keyAlias System.getenv("KEY_ALIAS") ?: "key0"
-            keyPassword System.getenv("KEY_PASS") ?: "android"
+        // Fixed keystore committed to repo — SHA-1 will NEVER change
+        debug {
+            storeFile file("${rootProject.projectDir}/keystore/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
         }
     }
 
@@ -30,12 +30,13 @@ android {
             minifyEnabled true
             shrinkResources true
             debuggable false
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             minifyEnabled false
             debuggable true
+            signingConfig signingConfigs.debug
         }
     }
 
