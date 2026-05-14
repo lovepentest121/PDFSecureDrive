@@ -33,6 +33,23 @@ object PdfScanner {
         PatternThreat("eval(",         Threat("Eval Call",               "eval() function call detected",          RiskLevel.HIGH,     "Scripting")),
         PatternThreat("app.alert",     Threat("PDF Alert Function",      "app.alert() Acrobat JS detected",        RiskLevel.CRITICAL, "Scripting")),
         PatternThreat("this.exportDataObject", Threat("Data Exfiltration","exportDataObject can leak files",       RiskLevel.CRITICAL, "Exfiltration")),
+        PatternThreat("/URI ",          Threat("URI Action",              "External URI action in PDF",             RiskLevel.MEDIUM,   "Exfiltration")),
+        PatternThreat("/GoToR",         Threat("Remote GoTo",             "Opens external PDF/file",                RiskLevel.MEDIUM,   "Exfiltration")),
+        PatternThreat("/Sound",         Threat("Sound Embed",             "Embedded sound object detected",         RiskLevel.LOW,      "Scripting")),
+        PatternThreat("/Movie",         Threat("Movie Embed",             "Embedded movie/video object",            RiskLevel.MEDIUM,   "Scripting")),
+        PatternThreat("getURL",         Threat("URL Fetch",               "getURL() Acrobat JS call",               RiskLevel.HIGH,     "Exfiltration")),
+        PatternThreat("app.launchURL",  Threat("Launch URL",              "app.launchURL() opens browser",          RiskLevel.HIGH,     "Exfiltration")),
+        PatternThreat("util.printf",    Threat("Format String",           "util.printf() pattern detected",         RiskLevel.HIGH,     "Scripting")),
+        PatternThreat("/Encrypt",       Threat("Encrypted Streams",       "Encrypted payload streams found",        RiskLevel.MEDIUM,   "Obfuscation")),
+        PatternThreat("unescape(",      Threat("String Obfuscation",      "unescape() used for obfuscation",        RiskLevel.HIGH,     "Scripting")),
+        PatternThreat("String.fromCharCode", Threat("Char Code Obfuscation","Char code encoding detected",         RiskLevel.HIGH,     "Scripting")),
+        PatternThreat("%u0",            Threat("Unicode Obfuscation",     "Unicode escape obfuscation",             RiskLevel.MEDIUM,   "Obfuscation")),
+        PatternThreat("CVE-",           Threat("CVE Reference",           "Known CVE reference in document",        RiskLevel.HIGH,     "Exploit")),
+        PatternThreat("mshta",          Threat("MSHTA Reference",         "mshta.exe execution reference",          RiskLevel.CRITICAL, "Auto-Exec")),
+        PatternThreat("certutil",       Threat("Certutil Reference",      "certutil LOLBin reference",              RiskLevel.CRITICAL, "Auto-Exec")),
+        PatternThreat("regsvr32",       Threat("Regsvr32 Reference",      "regsvr32 LOLBin reference",              RiskLevel.CRITICAL, "Auto-Exec")),
+        PatternThreat("wmic",           Threat("WMIC Reference",          "WMI command reference",                  RiskLevel.HIGH,     "Auto-Exec")),
+        PatternThreat("bitsadmin",      Threat("BITSAdmin Reference",     "bitsadmin downloader reference",         RiskLevel.CRITICAL, "Auto-Exec")),
     )
 
     private val SUSPICIOUS_URI_SCHEMES = listOf(

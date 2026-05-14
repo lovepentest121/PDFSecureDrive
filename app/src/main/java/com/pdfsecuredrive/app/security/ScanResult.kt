@@ -24,7 +24,8 @@ data class ScanResult(
     val fileSize: Long,
     val scanDurationMs: Long,
     val fileHash: String,
-    val vtStatus: VtStatus = VtStatus.NOT_CONFIGURED
+    val vtStatus: VtStatus = VtStatus.NOT_CONFIGURED,
+    val isValidPdf: Boolean = true
 ) {
     val highestRisk: RiskLevel
         get() = threats.maxByOrNull { it.riskLevel.ordinal }?.riskLevel ?: RiskLevel.SAFE

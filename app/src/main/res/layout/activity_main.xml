@@ -1,206 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark"
-    android:fillViewport="true">
+    android:filterTouchesWhenObscured="true">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <!-- Settings button top-right -->
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@color/bg_card"
+        android:src="@drawable/ic_settings"
+        android:contentDescription="Settings"
+        android:padding="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp" />
+
+    <!-- App title top-left -->
+    <TextView
+        android:id="@+id/tv_app_title"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:padding="28dp"
-        android:filterTouchesWhenObscured="true">
+        android:text="PDF Secure Drive"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginTop="28dp"
+        android:layout_marginStart="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_settings" />
 
-        <!-- Shield icon -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🛡️"
-            android:textSize="72sp"
-            android:layout_marginTop="48dp" />
+    <TextView
+        android:id="@+id/tv_subtitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Scan · Protect · Upload"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="2dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_app_title"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginTop="12dp" />
+    <!-- Guideline for vertical centering -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guide_v_center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.48" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Scan · Protect · Upload"
-            android:textSize="13sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="36dp" />
+    <!-- Main Status Card (3D) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="16dp"
+        app:cardBackgroundColor="@color/bg_card"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/divider"
+        app:layout_constraintTop_toTopOf="@id/guide_v_center"
+        app:layout_constraintBottom_toBottomOf="@id/guide_v_center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0">
 
-        <!-- Status Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/bg_card"
-            android:padding="20dp"
-            android:layout_marginBottom="24dp">
+            android:gravity="center"
+            android:padding="28dp">
+
+            <TextView
+                android:id="@+id/tv_shield_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛡️"
+                android:textSize="52sp" />
 
             <TextView
                 android:id="@+id/tv_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/status_idle"
-                android:textSize="14sp"
+                android:text="Sign in to start monitoring"
+                android:textSize="15sp"
                 android:textColor="@color/text_primary"
                 android:gravity="center"
-                android:layout_gravity="center_horizontal"
-                android:lineSpacingMultiplier="1.4" />
-        </LinearLayout>
+                android:layout_marginTop="12dp"
+                android:lineSpacingMultiplier="1.5" />
 
-        <!-- Sign In Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_sign_in"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/sign_in"
-            android:paddingStart="32dp"
-            android:paddingEnd="32dp"
-            android:backgroundTint="@color/accent_blue" />
-
-        <!-- Sign Out Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_sign_out"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/sign_out"
-            android:visibility="gone"
-            android:paddingStart="32dp"
-            android:paddingEnd="32dp"
-            android:backgroundTint="@color/error_red" />
-
-        <!-- VirusTotal API Key Section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@color/bg_card"
-            android:padding="16dp"
-            android:layout_marginTop="16dp">
-
-            <TextView
+            <!-- Sign In Button -->
+            <Button
+                android:id="@+id/btn_sign_in"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🦠 VirusTotal API Key (Optional)"
-                android:textSize="13sp"
+                android:layout_height="48dp"
+                android:text="Connect Google Drive"
+                android:background="@drawable/btn_blue_bg"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_secondary"
-                android:layout_marginBottom="8dp" />
+                android:paddingHorizontal="28dp"
+                android:layout_marginTop="20dp"
+                android:stateListAnimator="@null"
+                android:elevation="6dp" />
 
-            <EditText
-                android:id="@+id/et_vt_key"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Paste your VirusTotal API key"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
+            <!-- Sign Out Button -->
+            <Button
+                android:id="@+id/btn_sign_out"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:text="Disconnect"
                 android:background="@color/bg_dark"
-                android:padding="10dp"
-                android:inputType="textPassword"
-                android:textSize="12sp"
-                android:maxLines="1" />
+                android:textColor="@color/error_red"
+                android:textSize="13sp"
+                android:paddingHorizontal="24dp"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                android:stateListAnimator="@null" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_save_vt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Save API Key"
-                android:layout_marginTop="8dp"
-                android:backgroundTint="@color/safe_green"
-                style="@style/Widget.Material3.Button.TonalButton" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Key is encrypted and stored locally. Never sent anywhere except VirusTotal."
-                android:textSize="10sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="4dp" />
         </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <!-- Root Warning -->
-        <TextView
-            android:id="@+id/tv_root_warning"
-            android:layout_width="match_parent"
+    <!-- Root Warning -->
+    <TextView
+        android:id="@+id/tv_root_warning"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/root_warning"
+        android:textColor="@color/threat_high"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="10dp"
+        android:background="@color/bg_card"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/card_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Bottom feature row (3 chips) -->
+    <LinearLayout
+        android:id="@+id/ll_features"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="28dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.chip.Chip
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/root_warning"
-            android:textColor="@color/threat_high"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:visibility="gone"
-            android:layout_marginTop="20dp"
-            android:padding="12dp"
-            android:background="@color/bg_card" />
+            android:layout_weight="1"
+            android:text="🔍 Scan"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:chipBackgroundColor="@color/bg_card"
+            app:chipStrokeWidth="1dp"
+            app:chipStrokeColor="@color/divider"
+            android:layout_marginHorizontal="4dp"
+            android:clickable="false" />
 
-        <!-- Feature list -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.chip.Chip
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="36dp"
-            android:background="@color/bg_card"
-            android:padding="20dp">
+            android:layout_weight="1"
+            android:text="☁️ Upload"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:chipBackgroundColor="@color/bg_card"
+            app:chipStrokeWidth="1dp"
+            app:chipStrokeColor="@color/divider"
+            android:layout_marginHorizontal="4dp"
+            android:clickable="false" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="How it works"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_secondary"
-                android:layout_marginBottom="12dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1️⃣  PDF download detected anywhere on device"
-                android:textSize="13sp"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="2️⃣  Security engine scans for threats (static, no execution)"
-                android:textSize="13sp"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="3️⃣  If SAFE → notification with Upload/Cancel option"
-                android:textSize="13sp"
-                android:textColor="@color/safe_green"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="4️⃣  If THREAT → alert with risk details, upload blocked"
-                android:textSize="13sp"
-                android:textColor="@color/threat_critical"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="5️⃣  One tap upload → Drive link in notification"
-                android:textSize="13sp"
-                android:textColor="@color/text_primary" />
-        </LinearLayout>
+        <com.google.android.material.chip.Chip
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🛡️ Block"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:chipBackgroundColor="@color/bg_card"
+            app:chipStrokeWidth="1dp"
+            app:chipStrokeColor="@color/divider"
+            android:layout_marginHorizontal="4dp"
+            android:clickable="false" />
 
     </LinearLayout>
-</ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -60,7 +60,8 @@ object SecurityEngine {
             fileSize = file.length(),
             scanDurationMs = System.currentTimeMillis() - start,
             fileHash = scanOutput.fileHash,
-            vtStatus = vtStatus
+            vtStatus = vtStatus,
+            isValidPdf = scanOutput.isValidPdf
         )
     }
 }

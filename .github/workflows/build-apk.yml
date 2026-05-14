@@ -25,11 +25,27 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install fixed debug keystore
+        run: |
+          mkdir -p $HOME/.android
+          cp keystore/debug.keystore $HOME/.android/debug.keystore
+
       - name: Grant Gradle permission
         run: chmod +x gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
+
+      - name: Print signing SHA-1 (add to Google Cloud Console)
+        run: |
+          echo ""
+          echo "======================================================"
+          echo "  ADD THIS SHA-1 TO GOOGLE CLOUD CONSOLE (OAuth 2.0)"
+          echo "======================================================"
+          keytool -list -keystore $HOME/.android/debug.keystore \
+            -alias androiddebugkey -storepass android -v 2>&1 | grep "SHA1:"
+          echo "======================================================"
+          echo ""
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -38,7 +54,6 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      # Auto-create GitHub Release with APK — direct public download link
       - name: Delete old release if exists
         run: gh release delete latest-build --yes 2>/dev/null || true
         env:
@@ -49,7 +64,7 @@ jobs:
         with:
           tag_name: latest-build
           name: "Latest APK Build"
-          body: "Auto-built APK — PDF Secure Drive with VirusTotal scanning"
+          body: "Auto-built APK — PDF Secure Drive v2 with cover preview, AI title & VirusTotal scanning"
           files: app/build/outputs/apk/debug/app-debug.apk
           prerelease: true
         env:

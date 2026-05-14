@@ -1,14 +1,17 @@
 package com.pdfsecuredrive.app
 
 import android.Manifest
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
-import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import com.google.api.services.drive.DriveScopes
 import com.pdfsecuredrive.app.security.RootDetector
@@ -27,89 +31,103 @@ class MainActivity : AppCompatActivity() {
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        if (result.resultCode != RESULT_OK && result.data == null) {
+            Toast.makeText(this, "Sign-in cancelled", Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
         try {
             val account = GoogleSignIn
                 .getSignedInAccountFromIntent(result.data)
-                .getResult(Exception::class.java)
+                .getResult(ApiException::class.java)
 
             account?.email?.let { email ->
                 SecurePreferences.saveAccount(this, email)
                 SecurePreferences.setEnabled(this, true)
                 startMonitor()
-                render(email)
+                renderConnected(email)
+                animateCard(true)
             }
-        } catch (_: Exception) {
-            render(null)
+        } catch (e: ApiException) {
+            val msg = when (e.statusCode) {
+                10   -> "Setup error: SHA-1 not registered.\nOpen Settings → copy SHA-1 → add to Google Cloud Console"
+                12500, 12501 -> "Sign-in cancelled"
+                7    -> "Network error — check connection"
+                else -> "Sign-in failed (code ${e.statusCode})"
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Sign-in error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
     private val notifPermLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* Silently handled — service still works */ }
+    ) { }
 
     private val storageLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* Silently handled */ }
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Prevent screenshots — protects Google account info on screen
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
-
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_main)
 
-        // Warn on rooted devices
         if (RootDetector.isRooted(this)) {
             findViewById<TextView>(R.id.tv_root_warning).visibility = View.VISIBLE
         }
 
         requestRuntimePermissions()
 
-        // Restore state if already signed in
+        // Restore state
         val account = GoogleSignIn.getLastSignedInAccount(this)
-        if (account != null &&
-            account.grantedScopes.any { it.scopeUri == DriveScopes.DRIVE_FILE }) {
-            render(account.email)
+        if (account != null && account.grantedScopes.any { it.scopeUri == DriveScopes.DRIVE_FILE }) {
+            renderConnected(account.email)
+            animateCard(true)
             if (SecurePreferences.isEnabled(this)) startMonitor()
         } else {
-            render(null)
+            renderIdle()
         }
+
+        playEntranceAnimation()
 
         findViewById<Button>(R.id.btn_sign_in).setOnClickListener { startSignIn() }
         findViewById<Button>(R.id.btn_sign_out).setOnClickListener { signOut() }
-
-        // Load existing VT key (show masked)
-        val etVt = findViewById<EditText>(R.id.et_vt_key)
-        val existingKey = SecurePreferences.getVtApiKey(this)
-        if (existingKey.isNotBlank()) {
-            etVt.hint = "API key saved (${existingKey.take(4)}****)"
-        }
-
-        findViewById<Button>(R.id.btn_save_vt).setOnClickListener {
-            val key = etVt.text.toString().trim()
-            if (key.length < 32) {
-                Toast.makeText(this, "Invalid API key — must be at least 32 chars", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            SecurePreferences.saveVtApiKey(this, key)
-            etVt.setText("")
-            etVt.hint = "API key saved (${key.take(4)}****)"
-            Toast.makeText(this, "VirusTotal API key saved securely", Toast.LENGTH_SHORT).show()
+        findViewById<ImageButton>(R.id.btn_settings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
+    private fun playEntranceAnimation() {
+        val card = findViewById<View>(R.id.card_status)
+        card.translationY = 120f
+        card.alpha = 0f
+        val slide = ObjectAnimator.ofFloat(card, "translationY", 120f, 0f)
+        val fade  = ObjectAnimator.ofFloat(card, "alpha", 0f, 1f)
+        AnimatorSet().apply {
+            playTogether(slide, fade)
+            duration = 500
+            interpolator = DecelerateInterpolator(1.5f)
+            startDelay = 80
+            start()
+        }
+    }
+
+    private fun animateCard(active: Boolean) {
+        val card = findViewById<View>(R.id.card_status)
+        val targetAlpha = if (active) 1f else 0.85f
+        ObjectAnimator.ofFloat(card, "translationZ",
+            card.translationZ, if (active) 24f else 8f
+        ).apply { duration = 300; start() }
+    }
+
     private fun requestRuntimePermissions() {
-        // POST_NOTIFICATIONS on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED) {
             notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        // READ_EXTERNAL_STORAGE on Android 9-12
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
             != PackageManager.PERMISSION_GRANTED) {
@@ -120,18 +138,18 @@ class MainActivity : AppCompatActivity() {
     private fun startSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE_FILE)) // Least-privilege Drive scope
+            .requestScopes(Scope(DriveScopes.DRIVE_FILE))
             .build()
         signInLauncher.launch(GoogleSignIn.getClient(this, gso).signInIntent)
     }
 
     private fun signOut() {
         GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .signOut()
-            .addOnCompleteListener {
+            .signOut().addOnCompleteListener {
                 stopService(Intent(this, PdfMonitorService::class.java))
                 SecurePreferences.clearAll(this)
-                render(null)
+                renderIdle()
+                animateCard(false)
             }
     }
 
@@ -139,21 +157,19 @@ class MainActivity : AppCompatActivity() {
         startForegroundService(Intent(this, PdfMonitorService::class.java))
     }
 
-    private fun render(email: String?) {
-        val tvStatus = findViewById<TextView>(R.id.tv_status)
-        val btnIn    = findViewById<Button>(R.id.btn_sign_in)
-        val btnOut   = findViewById<Button>(R.id.btn_sign_out)
+    private fun renderConnected(email: String?) {
+        val masked = email?.let { "${it.take(3)}***${it.dropWhile { c -> c != '@' }}" } ?: "Connected"
+        findViewById<TextView>(R.id.tv_shield_icon).text = "✅"
+        findViewById<TextView>(R.id.tv_status).text =
+            "Monitoring active\n\n$masked\n\nAll PDF downloads scanned automatically"
+        findViewById<Button>(R.id.btn_sign_in).visibility  = View.GONE
+        findViewById<Button>(R.id.btn_sign_out).visibility = View.VISIBLE
+    }
 
-        if (email != null) {
-            // Mask email — show prefix + domain only
-            val masked = "${email.take(3)}***${email.dropWhile { it != '@' }}"
-            tvStatus.text = "✅ Monitoring active\n\nAccount: $masked\n\nAny PDF downloaded anywhere on this device will be scanned automatically."
-            btnIn.visibility  = View.GONE
-            btnOut.visibility = View.VISIBLE
-        } else {
-            tvStatus.text = getString(R.string.status_idle)
-            btnIn.visibility  = View.VISIBLE
-            btnOut.visibility = View.GONE
-        }
+    private fun renderIdle() {
+        findViewById<TextView>(R.id.tv_shield_icon).text = "🛡️"
+        findViewById<TextView>(R.id.tv_status).text = "Connect your Google account\nto start monitoring PDF downloads"
+        findViewById<Button>(R.id.btn_sign_in).visibility  = View.VISIBLE
+        findViewById<Button>(R.id.btn_sign_out).visibility = View.GONE
     }
 }
