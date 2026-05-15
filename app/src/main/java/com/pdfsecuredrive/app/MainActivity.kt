@@ -1,6 +1,8 @@
 package com.pdfsecuredrive.app
 
 import android.Manifest
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -19,6 +21,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import com.pdfsecuredrive.app.video.VideoLinkDetector
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -105,6 +108,32 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkPermissionBanner()
         refreshHistory()
+        checkClipboardForVideoLink()
+    }
+
+    private fun checkClipboardForVideoLink() {
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: return
+            if (VideoLinkDetector.isVideoText(text)) {
+                val url = VideoLinkDetector.extractUrl(text) ?: return
+                val platform = VideoLinkDetector.platform(url)
+                // Show banner offering to handle the link
+                Toast.makeText(this,
+                    "${platform.emoji} Video link detected — tap to open downloader",
+                    Toast.LENGTH_LONG).apply {
+                    // On tap, open ShareHandlerActivity
+                    show()
+                }
+                // Open share handler directly
+                startActivity(Intent(this, ShareHandlerActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    data = Uri.parse(url)
+                })
+                // Clear so we don't trigger again on next resume
+                cm.clearPrimaryClip()
+            }
+        } catch (_: Exception) {}
     }
 
     private fun setupRecyclerView() {

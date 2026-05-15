@@ -45,6 +45,31 @@
             android:windowSoftInputMode="stateHidden" />
         <activity android:name=".PdfDetailActivity" android:exported="false" />
 
+        <!-- Video link share handler — receives links shared from YouTube, Instagram, etc. -->
+        <activity
+            android:name=".ShareHandlerActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="www.youtube.com" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="youtu.be" />
+            </intent-filter>
+        </activity>
+
         <!-- PDF Intercept: scans file before opening, appears in PDF open chooser -->
         <activity
             android:name=".PdfInterceptActivity"
