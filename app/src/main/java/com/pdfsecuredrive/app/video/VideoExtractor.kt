@@ -23,45 +23,48 @@ object VideoExtractor {
         return tryPipedApi(videoId) ?: tryInvidiousApi(videoId)
     }
 
-    private fun tryPipedApi(videoId: String): StreamInfo? = try {
-        val json = httpGet("https://pipedapi.kavin.rocks/streams/$videoId") ?: return null
-        val obj  = JSONObject(json)
-        val streams = obj.optJSONArray("videoStreams") ?: return null
+    private fun tryPipedApi(videoId: String): StreamInfo? {
+        return try {
+            val json = httpGet("https://pipedapi.kavin.rocks/streams/$videoId") ?: return null
+            val obj     = JSONObject(json)
+            val streams = obj.optJSONArray("videoStreams") ?: return null
 
-        // Pick best quality mp4
-        var best: StreamInfo? = null
-        for (i in 0 until streams.length()) {
-            val s = streams.getJSONObject(i)
-            val mime    = s.optString("mimeType", "")
-            val quality = s.optString("quality", "")
-            val streamUrl = s.optString("url", "")
-            if (streamUrl.isBlank()) continue
-            if (mime.contains("video/mp4") && !mime.contains("audio")) {
-                val q = quality.replace("p", "").toIntOrNull() ?: 0
-                val cur = best?.quality?.replace("p","")?.toIntOrNull() ?: 0
-                if (q > cur) best = StreamInfo(streamUrl, quality, mime)
-            }
-        }
-        best
-    } catch (_: Exception) { null }
-
-    private fun tryInvidiousApi(videoId: String): StreamInfo? = try {
-        val instances = listOf("invidious.io", "yewtu.be", "vid.puffyan.us")
-        for (inst in instances) {
-            val json = httpGet("https://$inst/api/v1/videos/$videoId?fields=formatStreams") ?: continue
-            val obj  = JSONObject(json)
-            val streams = obj.optJSONArray("formatStreams") ?: continue
+            var best: StreamInfo? = null
             for (i in 0 until streams.length()) {
                 val s = streams.getJSONObject(i)
-                val mime = s.optString("type", "")
-                val url  = s.optString("url", "")
-                if (url.isNotBlank() && mime.contains("mp4")) {
-                    return StreamInfo(url, s.optString("quality", "720p"), mime)
+                val mime      = s.optString("mimeType", "")
+                val quality   = s.optString("quality", "")
+                val streamUrl = s.optString("url", "")
+                if (streamUrl.isBlank()) continue
+                if (mime.contains("video/mp4") && !mime.contains("audio")) {
+                    val q   = quality.replace("p", "").toIntOrNull() ?: 0
+                    val cur = best?.quality?.replace("p", "")?.toIntOrNull() ?: 0
+                    if (q > cur) best = StreamInfo(streamUrl, quality, mime)
                 }
             }
-        }
-        null
-    } catch (_: Exception) { null }
+            best
+        } catch (_: Exception) { null }
+    }
+
+    private fun tryInvidiousApi(videoId: String): StreamInfo? {
+        return try {
+            val instances = listOf("invidious.io", "yewtu.be", "vid.puffyan.us")
+            for (inst in instances) {
+                val json    = httpGet("https://$inst/api/v1/videos/$videoId?fields=formatStreams") ?: continue
+                val obj     = JSONObject(json)
+                val streams = obj.optJSONArray("formatStreams") ?: continue
+                for (i in 0 until streams.length()) {
+                    val s    = streams.getJSONObject(i)
+                    val mime = s.optString("type", "")
+                    val url  = s.optString("url", "")
+                    if (url.isNotBlank() && mime.contains("mp4")) {
+                        return StreamInfo(url, s.optString("quality", "720p"), mime)
+                    }
+                }
+            }
+            null
+        } catch (_: Exception) { null }
+    }
 
     private fun extractYouTubeId(url: String): String? {
         val patterns = listOf(

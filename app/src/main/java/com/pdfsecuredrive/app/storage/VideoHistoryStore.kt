@@ -18,12 +18,16 @@ object VideoHistoryStore {
         save(context, list)
     }
 
-    fun getAll(context: Context): List<VideoRecord> = try {
-        val f = file(context)
-        if (!f.exists()) return emptyList()
-        val type = object : TypeToken<List<VideoRecord>>() {}.type
-        gson.fromJson<List<VideoRecord>>(f.readText(), type) ?: emptyList()
-    } catch (_: Exception) { emptyList() }
+    fun getAll(context: Context): List<VideoRecord> {
+        return try {
+            val f = file(context)
+            if (!f.exists()) emptyList()
+            else {
+                val type = object : TypeToken<List<VideoRecord>>() {}.type
+                gson.fromJson<List<VideoRecord>>(f.readText(), type) ?: emptyList()
+            }
+        } catch (_: Exception) { emptyList() }
+    }
 
     fun delete(context: Context, id: String) {
         val list = getAll(context).toMutableList()
