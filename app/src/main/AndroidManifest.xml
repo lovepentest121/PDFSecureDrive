@@ -44,6 +44,8 @@
         <activity android:name=".SettingsActivity" android:exported="false"
             android:windowSoftInputMode="stateHidden" />
         <activity android:name=".PdfDetailActivity" android:exported="false" />
+        <activity android:name=".VideoActivity" android:exported="false"
+            android:windowSoftInputMode="stateHidden" />
 
         <!-- Video link share handler — receives links shared from YouTube, Instagram, etc. -->
         <activity

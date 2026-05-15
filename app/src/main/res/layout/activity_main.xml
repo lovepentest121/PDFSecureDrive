@@ -79,6 +79,19 @@
                 android:letterSpacing="0.1" />
         </LinearLayout>
 
+        <!-- Video Vault shortcut -->
+        <Button
+            android:id="@+id/btn_video_section"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:text="🎬"
+            android:background="@drawable/badge_downloaded"
+            android:textColor="#FFa78bfa"
+            android:textSize="14sp"
+            android:paddingHorizontal="8dp"
+            android:stateListAnimator="@null"
+            android:layout_marginEnd="6dp" />
+
         <ImageButton
             android:id="@+id/btn_settings"
             android:layout_width="30dp"
@@ -251,87 +264,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ══════ VIDEO DOWNLOADER CARD ══════ -->
-    <LinearLayout
-        android:id="@+id/ll_video_card"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/video_card_bg"
-        android:padding="14dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="10dp"
-        android:elevation="8dp"
-        app:layout_constraintTop_toBottomOf="@id/ll_stats"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Header -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:gravity="center_vertical"
-            android:layout_marginBottom="10dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🎬" android:textSize="18sp" android:layout_marginEnd="8dp" />
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="VIDEO DOWNLOADER" android:textColor="#FFa78bfa"
-                android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" />
-            <TextView android:id="@+id/tv_video_hint"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Share link from any app →" android:textColor="#FF475569"
-                android:textSize="9sp" />
-        </LinearLayout>
-
-        <!-- URL input row -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="44dp"
-            android:orientation="horizontal" android:gravity="center_vertical"
-            android:background="@drawable/search_bg" android:layout_marginBottom="8dp">
-
-            <EditText
-                android:id="@+id/et_video_url"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@null"
-                android:hint="Paste YouTube / LinkedIn / Instagram link…"
-                android:textColorHint="#FF334155"
-                android:textColor="#FFE2E8F0"
-                android:textSize="11sp"
-                android:paddingHorizontal="12dp"
-                android:inputType="textUri"
-                android:imeOptions="actionGo"
-                android:singleLine="true" />
-
-            <Button
-                android:id="@+id/btn_paste_url"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:text="Paste"
-                android:background="@drawable/chip_bg"
-                android:textColor="#FF94A3B8"
-                android:textSize="10sp"
-                android:paddingHorizontal="10dp"
-                android:layout_marginEnd="4dp"
-                android:stateListAnimator="@null" />
-        </LinearLayout>
-
-        <!-- Download button -->
-        <Button
-            android:id="@+id/btn_video_download"
-            android:layout_width="match_parent"
-            android:layout_height="42dp"
-            android:text="⬇️  Detect &amp; Download"
-            android:background="@drawable/btn_video_primary"
-            android:textColor="#FFFFFFFF"
-            android:textSize="12sp"
-            android:stateListAnimator="@null" />
-
-        <!-- Supported platforms -->
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="▶️ YouTube  💼 LinkedIn  📸 Instagram  🐦 Twitter/X  👥 Facebook  🎵 TikTok"
-            android:textColor="#FF334155" android:textSize="9sp"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
-
     <!-- ══════ HISTORY HEADER + SEARCH ══════ -->
     <LinearLayout
         android:id="@+id/ll_history_header"
@@ -341,7 +273,7 @@
         android:paddingHorizontal="16dp"
         android:paddingTop="14dp"
         android:paddingBottom="6dp"
-        app:layout_constraintTop_toBottomOf="@id/ll_video_card"
+        app:layout_constraintTop_toBottomOf="@id/ll_stats"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 

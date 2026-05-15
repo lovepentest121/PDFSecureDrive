@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/video_item_bg"
+    android:padding="12dp"
+    android:layout_marginBottom="10dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:elevation="6dp">
+
+    <!-- Platform thumbnail / icon -->
+    <FrameLayout
+        android:layout_width="62dp"
+        android:layout_height="72dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/video_thumb_bg"
+        android:clipToOutline="true">
+
+        <!-- Thumbnail image (loaded async) -->
+        <ImageView
+            android:id="@+id/iv_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Thumbnail"
+            android:visibility="gone" />
+
+        <!-- Fallback: platform emoji -->
+        <LinearLayout
+            android:id="@+id/ll_thumb_fallback"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tv_platform_emoji_large"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎬"
+                android:textSize="26sp" />
+
+            <TextView
+                android:id="@+id/tv_platform_label_small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VIDEO"
+                android:textColor="#4D7C3AED"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Play overlay indicator -->
+        <View
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="4dp"
+            android:background="@drawable/dot_green" />
+    </FrameLayout>
+
+    <!-- Content column -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_gravity="center_vertical">
+
+        <!-- Video title -->
+        <TextView
+            android:id="@+id/tv_video_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Video Title"
+            android:textColor="#FFF1F5F9"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:lineSpacingMultiplier="1.2" />
+
+        <!-- Platform chip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/chip_bg"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:layout_marginTop="5dp">
+
+            <TextView
+                android:id="@+id/tv_platform_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▶️"
+                android:textSize="11sp"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_platform_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="YouTube"
+                android:textColor="#FF7C3AED"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04" />
+        </LinearLayout>
+
+        <!-- Date + status row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="14 May 26"
+                android:textColor="#FF334155"
+                android:textSize="9sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  ·  "
+                android:textColor="#FF1E2A45"
+                android:textSize="9sp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="DOWNLOADED"
+                android:textColor="#FF3B5B8E"
+                android:textSize="9sp"
+                android:letterSpacing="0.04" />
+
+            <TextView
+                android:id="@+id/tv_status_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SAVED"
+                android:textColor="#FFa78bfa"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:background="@drawable/badge_downloaded"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp" />
+        </LinearLayout>
+
+        <!-- Action buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <!-- Copy title -->
+            <ImageButton
+                android:id="@+id/btn_copy_title"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_copy_title"
+                android:background="@drawable/chip_bg"
+                android:padding="6dp"
+                android:contentDescription="Copy title"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Open URL -->
+            <ImageButton
+                android:id="@+id/btn_open"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_open"
+                android:background="@drawable/chip_bg"
+                android:padding="6dp"
+                android:contentDescription="Open link"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Delete -->
+            <ImageButton
+                android:id="@+id/btn_delete"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_delete"
+                android:background="@drawable/chip_bg"
+                android:padding="6dp"
+                android:contentDescription="Delete" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,8 +1,6 @@
 package com.pdfsecuredrive.app
 
 import android.Manifest
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -21,7 +19,6 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import com.pdfsecuredrive.app.video.VideoLinkDetector
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -102,80 +99,15 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         findViewById<Button>(R.id.btn_grant_permission).setOnClickListener { requestAllFilesPermission() }
-        setupVideoCard()
-    }
-
-    private fun setupVideoCard() {
-        val etUrl   = findViewById<EditText>(R.id.et_video_url)
-        val btnPaste = findViewById<Button>(R.id.btn_paste_url)
-        val btnDl   = findViewById<Button>(R.id.btn_video_download)
-
-        btnPaste.setOnClickListener {
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
-            if (text.isNotBlank()) {
-                etUrl.setText(text)
-                etUrl.setSelection(text.length)
-            } else {
-                Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
-            }
+        findViewById<Button>(R.id.btn_video_section).setOnClickListener {
+            startActivity(Intent(this, VideoActivity::class.java))
         }
-
-        btnDl.setOnClickListener {
-            val raw = etUrl.text?.toString()?.trim() ?: ""
-            val url = if (raw.isBlank()) {
-                // Try clipboard directly
-                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.primaryClip?.getItemAt(0)?.text?.toString()?.trim() ?: ""
-            } else raw
-
-            val extracted = VideoLinkDetector.extractUrl(url)
-            if (extracted == null) {
-                Toast.makeText(this, "Please paste a valid video link", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            openVideoHandler(extracted)
-            etUrl.setText("")
-        }
-
-        // Also handle keyboard "Go" action
-        etUrl.setOnEditorActionListener { _, _, _ ->
-            btnDl.performClick(); true
-        }
-    }
-
-    private fun openVideoHandler(url: String) {
-        startActivity(Intent(this, ShareHandlerActivity::class.java).apply {
-            action = Intent.ACTION_VIEW
-            data = Uri.parse(url)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
     }
 
     override fun onResume() {
         super.onResume()
         checkPermissionBanner()
         refreshHistory()
-        checkClipboardForVideoLink()
-    }
-
-    private fun checkClipboardForVideoLink() {
-        try {
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: return
-            val url = VideoLinkDetector.extractUrl(text) ?: return
-            if (!VideoLinkDetector.isVideoLink(url)) return
-
-            // Pre-fill the URL field so user sees it and just taps Download
-            val et = findViewById<EditText>(R.id.et_video_url)
-            if (et.text.isNullOrBlank()) {
-                et.setText(url)
-                val platform = VideoLinkDetector.platform(url)
-                Toast.makeText(this,
-                    "${platform.emoji} ${platform.label} link detected! Tap ⬇️ to download",
-                    Toast.LENGTH_LONG).show()
-            }
-        } catch (_: Exception) {}
     }
 
     private fun setupRecyclerView() {

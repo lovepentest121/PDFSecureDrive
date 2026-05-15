@@ -1,6 +1,8 @@
 package com.pdfsecuredrive.app
 
 import android.app.DownloadManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -14,15 +16,16 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.pdfsecuredrive.app.video.Platform
-import com.pdfsecuredrive.app.video.VideoInfo
-import com.pdfsecuredrive.app.video.VideoLinkDetector
-import com.pdfsecuredrive.app.video.VideoTitleFetcher
+import com.pdfsecuredrive.app.model.VideoRecord
+import com.pdfsecuredrive.app.storage.VideoHistoryStore
+import com.pdfsecuredrive.app.video.*
 import kotlinx.coroutines.*
+import java.util.UUID
 
 class ShareHandlerActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var currentInfo: VideoInfo? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,146 +39,176 @@ class ShareHandlerActivity : AppCompatActivity() {
         }
 
         val url = sharedText?.let { VideoLinkDetector.extractUrl(it) }
+            ?: intent?.dataString?.let { VideoLinkDetector.extractUrl(it) }
 
         if (url == null) {
             Toast.makeText(this, "No video link found", Toast.LENGTH_SHORT).show()
             finish(); return
         }
 
-        val platform = VideoLinkDetector.platform(url)
-        setupUI(url, platform)
-        fetchAndDisplay(url)
+        setupStaticUI(url)
+        fetchInfo(url)
     }
 
-    private fun setupUI(url: String, platform: Platform) {
+    private fun setupStaticUI(url: String) {
+        val platform = VideoLinkDetector.platform(url)
         findViewById<TextView>(R.id.tv_platform).text = "${platform.emoji} ${platform.label}"
-        findViewById<TextView>(R.id.tv_video_url).text = url.take(60) + if (url.length > 60) "…" else ""
+        findViewById<TextView>(R.id.tv_video_url).text = url.take(55) + if (url.length > 55) "…" else ""
         findViewById<TextView>(R.id.tv_video_title).text = "Fetching title…"
         findViewById<ProgressBar>(R.id.pb_fetch).visibility = View.VISIBLE
-
         findViewById<Button>(R.id.btn_download).isEnabled = false
+        findViewById<Button>(R.id.btn_copy_title).visibility = View.GONE
+        findViewById<TextView>(R.id.btn_close).setOnClickListener { finish() }
         findViewById<Button>(R.id.btn_open_browser).setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
-        findViewById<TextView>(R.id.btn_close).setOnClickListener { finish() }
     }
 
-    private fun fetchAndDisplay(url: String) {
+    private fun fetchInfo(url: String) {
         scope.launch {
-            val info = withContext(Dispatchers.IO) {
-                VideoTitleFetcher.fetch(url)
-            }
-
-            findViewById<ProgressBar>(R.id.pb_fetch).visibility = View.GONE
-            displayVideoInfo(info)
+            val info = withContext(Dispatchers.IO) { VideoTitleFetcher.fetch(url) }
+            currentInfo = info
+            displayInfo(info)
         }
     }
 
-    private fun displayVideoInfo(info: VideoInfo) {
-        val tvTitle    = findViewById<TextView>(R.id.tv_video_title)
+    private fun displayInfo(info: VideoInfo) {
+        findViewById<ProgressBar>(R.id.pb_fetch).visibility = View.GONE
+        val tvTitle = findViewById<TextView>(R.id.tv_video_title)
         val tvPlatform = findViewById<TextView>(R.id.tv_platform)
-        val btnDl      = findViewById<Button>(R.id.btn_download)
-        val btnBrowser = findViewById<Button>(R.id.btn_open_browser)
+        val btnDl = findViewById<Button>(R.id.btn_download)
+        val btnCopyTitle = findViewById<Button>(R.id.btn_copy_title)
 
-        tvTitle.text    = info.title
+        tvTitle.text = info.title
         tvPlatform.text = "${info.platform.emoji} ${info.platform.label}"
 
+        // Copy title button
+        btnCopyTitle.visibility = View.VISIBLE
+        btnCopyTitle.setOnClickListener {
+            val cb = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            cb.setPrimaryClip(ClipData.newPlainText("title", info.title))
+            Toast.makeText(this, "Title copied!", Toast.LENGTH_SHORT).show()
+        }
+
+        // Configure download button based on platform
         when (info.platform) {
             Platform.YOUTUBE -> {
-                // YouTube: open in YouTube app or browser (yt-dlp not bundled)
-                btnDl.text = "▶️ Open in YouTube"
+                btnDl.text = "⬇️  Download Video (MP4)"
                 btnDl.isEnabled = true
-                btnDl.setOnClickListener {
-                    openInApp(info.url, "com.google.android.youtube") ?: run {
-                        openBrowser(info.url)
-                    }
-                }
-                btnBrowser.text = "🌐 Open in Browser"
-            }
-            Platform.TIKTOK -> {
-                btnDl.text = "▶️ Open in TikTok"
-                btnDl.isEnabled = true
-                btnDl.setOnClickListener { openBrowser(info.url) }
-            }
-            Platform.INSTAGRAM -> {
-                btnDl.text = "▶️ Open in Instagram"
-                btnDl.isEnabled = true
-                btnDl.setOnClickListener {
-                    openInApp(info.url, "com.instagram.android") ?: openBrowser(info.url)
-                }
-            }
-            Platform.TWITTER -> {
-                btnDl.text = "▶️ Open in Twitter/X"
-                btnDl.isEnabled = true
-                btnDl.setOnClickListener {
-                    openInApp(info.url, "com.twitter.android")
-                        ?: openInApp(info.url, "com.x.android")
-                        ?: openBrowser(info.url)
-                }
-            }
-            Platform.LINKEDIN -> {
-                btnDl.text = "▶️ Open in LinkedIn"
-                btnDl.isEnabled = true
-                btnDl.setOnClickListener {
-                    openInApp(info.url, "com.linkedin.android") ?: openBrowser(info.url)
-                }
+                btnDl.setOnClickListener { startYouTubeDownload(info) }
             }
             else -> {
-                // Try direct download if URL ends with video extension
-                if (info.url.contains(Regex("\\.(mp4|webm|mkv|mov)(\\?|$)", RegexOption.IGNORE_CASE))) {
-                    btnDl.text = "⬇️ Download Video"
-                    btnDl.isEnabled = true
-                    btnDl.setOnClickListener { startDirectDownload(info) }
-                } else {
-                    btnDl.text = "🌐 Open in Browser"
-                    btnDl.isEnabled = true
-                    btnDl.setOnClickListener { openBrowser(info.url) }
-                }
+                // For other platforms, try direct download or open in app
+                btnDl.text = "⬇️  Download / Open"
+                btnDl.isEnabled = true
+                btnDl.setOnClickListener { handleOtherPlatform(info) }
             }
         }
-        btnBrowser.setOnClickListener { openBrowser(info.url) }
+
+        findViewById<Button>(R.id.btn_open_browser).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
     }
 
-    private fun startDirectDownload(info: VideoInfo) {
+    private fun startYouTubeDownload(info: VideoInfo) {
+        val btnDl = findViewById<Button>(R.id.btn_download)
+        val pb    = findViewById<ProgressBar>(R.id.pb_fetch)
+
+        btnDl.isEnabled = false
+        btnDl.text = "🔍 Finding stream…"
+        pb.visibility = View.VISIBLE
+
+        scope.launch {
+            val stream = withContext(Dispatchers.IO) { VideoExtractor.extractStream(info) }
+            pb.visibility = View.GONE
+
+            if (stream != null) {
+                btnDl.text = "⬇️ Starting download…"
+                startDownload(info, stream.directUrl)
+            } else {
+                // Fallback: open in YouTube app or browser
+                btnDl.isEnabled = true
+                btnDl.text = "▶️ Open in YouTube"
+                Toast.makeText(this@ShareHandlerActivity,
+                    "Direct stream not available — opening YouTube", Toast.LENGTH_LONG).show()
+                openInAppOrBrowser(info.url, "com.google.android.youtube")
+            }
+        }
+    }
+
+    private fun handleOtherPlatform(info: VideoInfo) {
+        // Try to detect direct mp4 in URL, else open in native app
+        if (info.url.contains(Regex("\\.(mp4|webm|mov)(\\?|$)", RegexOption.IGNORE_CASE))) {
+            startDownload(info, info.url)
+        } else {
+            val pkg = when (info.platform) {
+                Platform.INSTAGRAM -> "com.instagram.android"
+                Platform.TWITTER   -> "com.twitter.android"
+                Platform.LINKEDIN  -> "com.linkedin.android"
+                Platform.TIKTOK    -> "com.zhiliaoapp.musically"
+                Platform.FACEBOOK  -> "com.facebook.katana"
+                else               -> null
+            }
+            openInAppOrBrowser(info.url, pkg)
+            Toast.makeText(this,
+                "Opening in ${info.platform.label} — use in-app save/download option",
+                Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun startDownload(info: VideoInfo, downloadUrl: String) {
         try {
-            val fileName = "${info.title.replace(Regex("[^a-zA-Z0-9 ]"), "").take(40)}.mp4"
-            val req = DownloadManager.Request(Uri.parse(info.url)).apply {
+            val safeTitle = info.title.replace(Regex("[^a-zA-Z0-9 ]"), "").trim().take(40)
+            val fileName  = "${safeTitle.ifBlank { info.platform.label }}_${System.currentTimeMillis()}.mp4"
+
+            val req = DownloadManager.Request(Uri.parse(downloadUrl)).apply {
                 setTitle(info.title)
-                setDescription("Downloading from ${info.platform.label}")
+                setDescription("Downloading ${info.platform.label} video…")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, fileName)
+                setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "PDFSecureDrive/$fileName")
                 addRequestHeader("User-Agent",
-                    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/112")
+                    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/112 Mobile Safari/537.36")
+                addRequestHeader("Referer", "https://www.youtube.com/")
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(true)
             }
             val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             dm.enqueue(req)
-            Toast.makeText(this, "⬇️ Download started!", Toast.LENGTH_SHORT).show()
+
+            // Save to video history
+            VideoHistoryStore.add(this, VideoRecord(
+                id           = UUID.randomUUID().toString(),
+                title        = info.title,
+                url          = info.url,
+                platform     = info.platform.label,
+                platformEmoji = info.platform.emoji,
+                localPath    = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)}/PDFSecureDrive/$fileName",
+                thumbnailUrl  = info.thumbnailUrl,
+                downloadDate = System.currentTimeMillis(),
+                status       = "DOWNLOADED"
+            ))
+
+            Toast.makeText(this, "⬇️ Download started! Check notification bar.", Toast.LENGTH_LONG).show()
             finish()
         } catch (e: Exception) {
             Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            findViewById<Button>(R.id.btn_download).apply { isEnabled = true; text = "⬇️ Retry" }
         }
     }
 
-    private fun openInApp(url: String, packageName: String): Unit? {
-        return try {
-            packageManager.getLaunchIntentForPackage(packageName) ?: return null
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                setPackage(packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
-            finish()
-        } catch (_: Exception) { null }
-    }
-
-    private fun openBrowser(url: String) {
+    private fun openInAppOrBrowser(url: String, packageName: String?) {
+        if (packageName != null) {
+            try {
+                packageManager.getLaunchIntentForPackage(packageName) ?: throw Exception()
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    setPackage(packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                return
+            } catch (_: Exception) {}
+        }
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        finish()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        scope.cancel()
-    }
+    override fun onDestroy() { super.onDestroy(); scope.cancel() }
 }
