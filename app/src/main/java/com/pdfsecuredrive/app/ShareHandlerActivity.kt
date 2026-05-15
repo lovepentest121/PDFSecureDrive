@@ -158,14 +158,16 @@ class ShareHandlerActivity : AppCompatActivity() {
         }
     }
 
-    private fun openInApp(url: String, packageName: String): Unit? = try {
-        val intent = packageManager.getLaunchIntentForPackage(packageName) ?: return null
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-            setPackage(packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
-        finish()
-    } catch (_: Exception) { null }
+    private fun openInApp(url: String, packageName: String): Unit? {
+        return try {
+            packageManager.getLaunchIntentForPackage(packageName) ?: return null
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                setPackage(packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+            finish()
+        } catch (_: Exception) { null }
+    }
 
     private fun openBrowser(url: String) {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

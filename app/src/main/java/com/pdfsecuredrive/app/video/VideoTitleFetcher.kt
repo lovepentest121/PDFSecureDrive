@@ -9,66 +9,50 @@ object VideoTitleFetcher {
 
     suspend fun fetch(url: String): VideoInfo = withContext(Dispatchers.IO) {
         val platform = VideoLinkDetector.platform(url)
-
-        // Try OEmbed first for YouTube (no API key needed)
         if (platform == Platform.YOUTUBE) {
             val oembed = fetchYouTubeOEmbed(url)
             if (oembed != null) return@withContext oembed
         }
-
-        // Fallback: parse Open Graph tags from page HTML
         val info = fetchOpenGraph(url, platform)
-        info ?: VideoInfo(
-            url = url,
-            title = generateFallbackTitle(url, platform),
-            platform = platform
-        )
+        info ?: VideoInfo(url = url, title = generateFallbackTitle(platform), platform = platform)
     }
 
-    private fun fetchYouTubeOEmbed(url: String): VideoInfo? = try {
-        val oembedUrl = "https://www.youtube.com/oembed?url=${encode(url)}&format=json"
-        val json = httpGet(oembedUrl, timeout = 5000) ?: return null
-        val title = extractJson(json, "title") ?: return null
-        val thumb = extractJson(json, "thumbnail_url")
-        VideoInfo(
-            url = url,
-            title = title.trim(),
-            platform = Platform.YOUTUBE,
-            thumbnailUrl = thumb
-        )
-    } catch (_: Exception) { null }
+    private fun fetchYouTubeOEmbed(url: String): VideoInfo? {
+        return try {
+            val oembedUrl = "https://www.youtube.com/oembed?url=${encode(url)}&format=json"
+            val json = httpGet(oembedUrl, timeout = 5000) ?: return null
+            val title = extractJson(json, "title") ?: return null
+            val thumb = extractJson(json, "thumbnail_url")
+            VideoInfo(url = url, title = title.trim(), platform = Platform.YOUTUBE, thumbnailUrl = thumb)
+        } catch (_: Exception) { null }
+    }
 
-    private fun fetchOpenGraph(url: String, platform: Platform): VideoInfo? = try {
-        val html = httpGet(url, timeout = 7000, maxBytes = 32768) ?: return null
+    private fun fetchOpenGraph(url: String, platform: Platform): VideoInfo? {
+        return try {
+            val html = httpGet(url, timeout = 7000, maxBytes = 32768) ?: return null
+            val title = extractMeta(html, "og:title")
+                ?: extractMeta(html, "twitter:title")
+                ?: extractTag(html, "<title>", "</title>")
+                ?: return null
+            val thumb = extractMeta(html, "og:image") ?: extractMeta(html, "twitter:image")
+            VideoInfo(url = url, title = cleanTitle(title, platform), platform = platform, thumbnailUrl = thumb)
+        } catch (_: Exception) { null }
+    }
 
-        val title = extractMeta(html, "og:title")
-            ?: extractMeta(html, "twitter:title")
-            ?: extractTag(html, "<title>", "</title>")
-            ?: return null
-
-        val thumb = extractMeta(html, "og:image")
-            ?: extractMeta(html, "twitter:image")
-
-        VideoInfo(
-            url = url,
-            title = cleanTitle(title, platform),
-            platform = platform,
-            thumbnailUrl = thumb
-        )
-    } catch (_: Exception) { null }
-
-    private fun httpGet(url: String, timeout: Int = 5000, maxBytes: Int = 65536): String? = try {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        conn.setRequestProperty("User-Agent",
-            "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 Chrome/112.0.0.0 Mobile Safari/537.36")
-        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
-        conn.connectTimeout = timeout
-        conn.readTimeout = timeout
-        conn.instanceFollowRedirects = true
-        if (conn.responseCode !in 200..299) return null
-        val bytes = conn.inputStream.readBytes().take(maxBytes).toByteArray()
-        String(bytes, Charsets.UTF_8)
-    } catch (_: Exception) { null }
+    private fun httpGet(url: String, timeout: Int = 5000, maxBytes: Int = 65536): String? {
+        return try {
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.setRequestProperty("User-Agent",
+                "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 Chrome/112.0.0.0 Mobile Safari/537.36")
+            conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
+            conn.connectTimeout = timeout
+            conn.readTimeout = timeout
+            conn.instanceFollowRedirects = true
+            if (conn.responseCode !in 200..299) return null
+            val bytes = conn.inputStream.readBytes().take(maxBytes).toByteArray()
+            String(bytes, Charsets.UTF_8)
+        } catch (_: Exception) { null }
+    }
 
     private fun extractMeta(html: String, property: String): String? {
         val patterns = listOf(
@@ -84,29 +68,20 @@ object VideoTitleFetcher {
 
     private fun extractTag(html: String, open: String, close: String): String? {
         val start = html.indexOf(open, ignoreCase = true).takeIf { it >= 0 } ?: return null
-        val end = html.indexOf(close, start + open.length, ignoreCase = true).takeIf { it >= 0 } ?: return null
+        val end   = html.indexOf(close, start + open.length, ignoreCase = true).takeIf { it >= 0 } ?: return null
         return html.substring(start + open.length, end).trim().takeIf { it.isNotBlank() }
     }
 
-    private fun extractJson(json: String, key: String): String? {
-        val regex = Regex(""""$key"\s*:\s*"([^"]+)"""")
-        return regex.find(json)?.groupValues?.get(1)
-    }
+    private fun extractJson(json: String, key: String): String? =
+        Regex(""""$key"\s*:\s*"([^"]+)"""").find(json)?.groupValues?.get(1)
 
-    private fun cleanTitle(raw: String, platform: Platform): String {
-        return raw
-            .replace(" - YouTube", "")
-            .replace(" | LinkedIn", "")
-            .replace(" on Instagram", "")
-            .replace(" on Twitter", "")
-            .replace(" • Instagram", "")
-            .trim()
-            .take(80)
-            .ifBlank { generateFallbackTitle("", platform) }
-    }
+    private fun cleanTitle(raw: String, platform: Platform): String =
+        raw.replace(" - YouTube", "").replace(" | LinkedIn", "")
+            .replace(" on Instagram", "").replace(" on Twitter", "")
+            .replace(" • Instagram", "").trim().take(80)
+            .ifBlank { generateFallbackTitle(platform) }
 
-    private fun generateFallbackTitle(url: String, platform: Platform): String =
-        "${platform.emoji} ${platform.label} Video"
+    private fun generateFallbackTitle(platform: Platform) = "${platform.emoji} ${platform.label} Video"
 
     private fun decodeHtml(s: String) = s
         .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
