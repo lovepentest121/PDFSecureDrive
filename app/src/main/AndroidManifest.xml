@@ -114,5 +114,17 @@
 
         <receiver android:name=".receiver.NotificationActionReceiver" android:exported="false" />
 
+        <!-- Quick Settings tile: copy a video link → pull down → tap → Download/Cancel notification -->
+        <service
+            android:name=".tile.ClipboardTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_download"
+            android:label="Grab Video Link"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
     </application>
 </manifest>

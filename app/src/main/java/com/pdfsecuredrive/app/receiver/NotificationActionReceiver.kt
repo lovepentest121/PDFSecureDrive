@@ -5,19 +5,17 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.media.MediaScannerConnection
-import android.os.Build
 import android.os.Environment
 import android.widget.Toast
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.pdfsecuredrive.app.notification.AppNotificationManager
+import com.pdfsecuredrive.app.pdf.ShareCard
 import com.pdfsecuredrive.app.worker.DriveUploadWorker
+import com.pdfsecuredrive.app.worker.VideoDownloadWorker
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 
 class NotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -26,7 +24,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             AppNotificationManager.ACTION_UPLOAD -> {
                 val path = intent.getStringExtra(AppNotificationManager.EXTRA_FILE_PATH) ?: return
-                if (!isPathSafe(path)) return
+                if (!isPathSafe(context, path)) return
                 val coverPath = intent.getStringExtra(AppNotificationManager.EXTRA_COVER_PATH)
                 AppNotificationManager.dismiss(context, id)
                 WorkManager.getInstance(context).enqueue(
@@ -61,32 +59,58 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     Toast.makeText(context, "Cover not available", Toast.LENGTH_SHORT).show()
                     return
                 }
-                saveCoverToGallery(context, src)
+                val ok = ShareCard.saveImageFile(context, src)
+                Toast.makeText(context, if (ok) "Cover saved to Gallery" else "Failed to save cover", Toast.LENGTH_SHORT).show()
+                AppNotificationManager.dismiss(context, id)
+            }
+
+            // MASTER SAVE: one tap → render+save subscriber card to gallery + copy title & link
+            AppNotificationManager.ACTION_MASTER_SAVE -> {
+                val link  = intent.getStringExtra(AppNotificationManager.EXTRA_SHARE_LINK)
+                val cover = intent.getStringExtra(AppNotificationManager.EXTRA_COVER_PATH)
+                val title = intent.getStringExtra(AppNotificationManager.EXTRA_TITLE) ?: "PDF"
+
+                val saved = ShareCard.saveShareCard(context, cover, title, link)
+                val clip = buildString {
+                    append(title).append("\n").append(ShareCard.SUBSCRIBER_BADGE)
+                    if (!link.isNullOrBlank()) append("\n").append(link)
+                }
+                (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+                    .setPrimaryClip(ClipData.newPlainText("pdf_card", clip))
+
+                val msg = if (saved) "✓ Card saved to Gallery · title & link copied"
+                          else "Card save failed · title & link copied"
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                AppNotificationManager.dismiss(context, id)
+            }
+
+            // VIDEO: one tap → resolve direct stream + download (runs in a worker, off the main thread)
+            AppNotificationManager.ACTION_VIDEO_DOWNLOAD -> {
+                val url = intent.getStringExtra(AppNotificationManager.EXTRA_VIDEO_URL) ?: return
+                AppNotificationManager.showVideoDownloading(context, "")
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    "video_dl_${url.hashCode()}",
+                    ExistingWorkPolicy.KEEP,
+                    OneTimeWorkRequestBuilder<VideoDownloadWorker>()
+                        .setInputData(Data.Builder().putString(VideoDownloadWorker.KEY_URL, url).build())
+                        .build()
+                )
+            }
+
+            AppNotificationManager.ACTION_VIDEO_CANCEL -> {
                 AppNotificationManager.dismiss(context, id)
             }
         }
     }
 
-    private fun saveCoverToGallery(context: Context, src: File) {
-        try {
-            val picDir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                "PDFCovers"
-            ).also { it.mkdirs() }
-            val dest = File(picDir, src.name)
-            FileInputStream(src).use { inp -> FileOutputStream(dest).use { out -> inp.copyTo(out) } }
-            MediaScannerConnection.scanFile(context, arrayOf(dest.absolutePath), arrayOf("image/jpeg"), null)
-            Toast.makeText(context, "Cover saved to Pictures/PDFCovers", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(context, "Failed to save cover", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun isPathSafe(path: String): Boolean {
+    private fun isPathSafe(context: Context, path: String): Boolean {
         if (path.contains("..")) return false
         val canonical = File(path).canonicalPath
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).canonicalPath
         val extRoot   = Environment.getExternalStorageDirectory().canonicalPath
-        return canonical.startsWith(downloads) || canonical.startsWith(extRoot)
+        // content:// downloads are scanned from a copy in our own cache dir, and that
+        // copy is what the Upload action re-reads — so it must be an allowed source too.
+        val cache     = context.cacheDir.canonicalPath
+        return canonical.startsWith(downloads) || canonical.startsWith(extRoot) || canonical.startsWith(cache)
     }
 }

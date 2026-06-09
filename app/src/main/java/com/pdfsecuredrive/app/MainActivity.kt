@@ -1,6 +1,8 @@
 package com.pdfsecuredrive.app
 
 import android.Manifest
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -32,7 +34,9 @@ import com.google.android.gms.common.api.Scope
 import com.google.api.services.drive.DriveScopes
 import com.pdfsecuredrive.app.adapter.PdfHistoryAdapter
 import com.pdfsecuredrive.app.model.PdfRecord
+import com.pdfsecuredrive.app.notification.AppNotificationManager
 import com.pdfsecuredrive.app.security.RootDetector
+import com.pdfsecuredrive.app.video.VideoLinkDetector
 import com.pdfsecuredrive.app.service.PdfMonitorService
 import com.pdfsecuredrive.app.storage.HistoryStore
 import com.pdfsecuredrive.app.storage.SecurePreferences
@@ -108,6 +112,30 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkPermissionBanner()
         refreshHistory()
+    }
+
+    // Detect-on-focus: the moment the app regains focus we're allowed to read the clipboard
+    // (Android 10+ blocks background clipboard reads entirely). If it holds a fresh social
+    // video link, fire a Download / Cancel notification immediately.
+    private var lastClipVideoUrl: String? = null
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) checkClipboardForVideo()
+    }
+
+    private fun checkClipboardForVideo() {
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (!cm.hasPrimaryClip()) return
+            val text = cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString() ?: return
+            val url  = VideoLinkDetector.extractUrl(text) ?: return
+            if (!VideoLinkDetector.isVideoLink(url)) return
+            if (url == lastClipVideoUrl) return          // dedupe — focus fires repeatedly
+            lastClipVideoUrl = url
+            val p = VideoLinkDetector.platform(url)
+            AppNotificationManager.showVideoPrompt(this, url, p.emoji, p.label, null)
+        } catch (_: Exception) {}
     }
 
     private fun setupRecyclerView() {

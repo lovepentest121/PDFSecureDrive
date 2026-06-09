@@ -1,7 +1,6 @@
 package com.pdfsecuredrive.app.security
 
 import java.io.File
-import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import org.json.JSONObject
@@ -9,8 +8,6 @@ import org.json.JSONObject
 object VirusTotalScanner {
 
     private const val VT_BASE = "https://www.virustotal.com/api/v3"
-    private const val POLL_INTERVAL_MS = 15_000L
-    private const val MAX_POLLS = 12 // 3 minutes max wait
 
     sealed class VtResult {
         data class Clean(val engines: Int, val detections: Int) : VtResult()
@@ -23,18 +20,21 @@ object VirusTotalScanner {
         object NoApiKey : VtResult()
     }
 
+    /**
+     * Hash-lookup ONLY — a single fast request.
+     *
+     * We deliberately no longer upload the file and poll for a fresh analysis here.
+     * That poll loop slept up to 3 minutes (Thread.sleep × MAX_POLLS) *inside* the
+     * scan path that gates the Upload prompt, so the "🔍 Scanning…" notification
+     * appeared to hang forever and the Upload action never showed.
+     *
+     * Cloud verification is now advisory: known-bad hashes are still caught
+     * instantly; unknown files return ERROR and the (fast, offline) local scan
+     * verdict stands on its own.
+     */
     fun scan(file: File, apiKey: String, fileHash: String): VtResult {
         if (apiKey.isBlank()) return VtResult.NoApiKey
-
-        // Step 1: Check by hash first (no file upload needed, saves quota)
-        val hashResult = checkByHash(fileHash, apiKey)
-        if (hashResult != null) return hashResult
-
-        // Step 2: Hash not in VT database — upload file for scan
-        val analysisId = uploadFile(file, apiKey) ?: return VtResult.Error("Upload to VirusTotal failed")
-
-        // Step 3: Poll for results
-        return pollAnalysis(analysisId, apiKey)
+        return checkByHash(fileHash, apiKey) ?: VtResult.Error("Not in VirusTotal database")
     }
 
     private fun checkByHash(sha256: String, apiKey: String): VtResult? {
@@ -50,61 +50,9 @@ object VirusTotalScanner {
         }
     }
 
-    private fun uploadFile(file: File, apiKey: String): String? {
-        return try {
-            val boundary = "----VTBoundary${System.currentTimeMillis()}"
-            val url = URL("$VT_BASE/files")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                setRequestProperty("x-apikey", apiKey)
-                setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-                doOutput = true
-                connectTimeout = 30_000
-                readTimeout = 60_000
-            }
-
-            conn.outputStream.use { out ->
-                // Write multipart boundary + file
-                val prefix = "--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"${file.name}\"\r\nContent-Type: application/pdf\r\n\r\n"
-                out.write(prefix.toByteArray())
-                FileInputStream(file).use { it.copyTo(out) }
-                out.write("\r\n--$boundary--\r\n".toByteArray())
-            }
-
-            if (conn.responseCode != 200) return null
-            val json = JSONObject(conn.inputStream.bufferedReader().readText())
-            json.getJSONObject("data").getString("id")
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun pollAnalysis(analysisId: String, apiKey: String): VtResult {
-        repeat(MAX_POLLS) {
-            Thread.sleep(POLL_INTERVAL_MS)
-            try {
-                val conn = openGet("$VT_BASE/analyses/$analysisId", apiKey)
-                if (conn.responseCode != 200) return@repeat
-
-                val json = JSONObject(conn.inputStream.bufferedReader().readText())
-                val attrs = json.getJSONObject("data").getJSONObject("attributes")
-                val status = attrs.optString("status", "queued")
-
-                if (status == "completed") {
-                    return parseAnalysisReport(attrs)
-                }
-            } catch (_: Exception) { }
-        }
-        return VtResult.Error("VirusTotal scan timed out")
-    }
-
     private fun parseFileReport(json: JSONObject): VtResult {
         val attrs = json.getJSONObject("data").getJSONObject("attributes")
         return parseStats(attrs.optJSONObject("last_analysis_stats"), attrs.optJSONObject("last_analysis_results"))
-    }
-
-    private fun parseAnalysisReport(attrs: JSONObject): VtResult {
-        return parseStats(attrs.optJSONObject("stats"), attrs.optJSONObject("results"))
     }
 
     private fun parseStats(stats: JSONObject?, results: JSONObject?): VtResult {
@@ -142,8 +90,10 @@ object VirusTotalScanner {
             requestMethod = "GET"
             // API key sent only over HTTPS (enforced by network_security_config)
             setRequestProperty("x-apikey", apiKey)
-            connectTimeout = 15_000
-            readTimeout = 15_000
+            // Tight timeout — this runs inline in the scan path, so it must never
+            // be able to stall the Upload prompt for long.
+            connectTimeout = 8_000
+            readTimeout = 8_000
         }
     }
 }

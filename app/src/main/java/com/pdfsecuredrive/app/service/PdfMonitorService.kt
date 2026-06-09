@@ -11,6 +11,7 @@ import com.pdfsecuredrive.app.model.PdfRecord
 import com.pdfsecuredrive.app.notification.AppNotificationManager
 import com.pdfsecuredrive.app.pdf.PdfCoverExtractor
 import com.pdfsecuredrive.app.security.PdfScanner
+import com.pdfsecuredrive.app.security.RiskLevel
 import com.pdfsecuredrive.app.security.SecurityEngine
 import com.pdfsecuredrive.app.storage.HistoryStore
 import com.pdfsecuredrive.app.storage.SecurePreferences
@@ -144,45 +145,66 @@ class PdfMonitorService : Service() {
             // Show instant "Scanning…" notification — user sees it immediately
             AppNotificationManager.showScanning(applicationContext, quickName, id)
 
-            delay(400) // brief wait for file write to flush
+            try {
+                delay(400) // brief wait for file write to flush
 
-            val file = resolveToFile(uriStr) ?: run {
-                AppNotificationManager.dismiss(applicationContext, id); return@launch
-            }
-            if (!file.exists() || file.length() < 100) {
-                AppNotificationManager.dismiss(applicationContext, id); return@launch
-            }
+                val file = resolveToFile(uriStr) ?: run {
+                    AppNotificationManager.dismiss(applicationContext, id); return@launch
+                }
+                if (!file.exists() || file.length() < 100) {
+                    AppNotificationManager.dismiss(applicationContext, id); return@launch
+                }
 
-            val result = SecurityEngine.scanFile(applicationContext, file)
-            val coverFile = if (result.isValidPdf) PdfCoverExtractor.extract(file, cacheDir) else null
+                val result = SecurityEngine.scanFile(applicationContext, file)
+                // runCatching so an OutOfMemoryError while rendering a cover (an Error,
+                // not an Exception — PdfCoverExtractor's own catch wouldn't catch it)
+                // can never kill this coroutine and leave the notification stuck.
+                val coverFile = if (result.isValidPdf)
+                    runCatching { PdfCoverExtractor.extract(file, cacheDir) }.getOrNull() else null
 
-            if (result.isSafe) {
-                AppNotificationManager.showSafePrompt(applicationContext, result, file.absolutePath, coverFile?.absolutePath, id)
-            } else {
-                // Auto-delete the malicious file immediately
-                val originalPath = if (uriStr.startsWith("file://")) uriStr.removePrefix("file://") else file.absolutePath
-                val deleted = autoDeleteThreat(uriStr, file, originalPath)
+                // Only a genuinely dangerous (CRITICAL) verdict is auto-deleted. Lower-risk
+                // indicators — hyperlinks (/URI), encryption (/Encrypt), a "CVE-" string in
+                // a security write-up, remote GoTo, etc. — are common in perfectly legit
+                // PDFs, so we still surface the Upload prompt for them instead of silently
+                // deleting the file (which is why the upload option "never" appeared).
+                val isCritical = !result.isSafe && result.highestRisk == RiskLevel.CRITICAL
 
-                HistoryStore.add(applicationContext, PdfRecord(
-                    id = UUID.randomUUID().toString(),
-                    fileName = file.name,
-                    aiTitle = file.nameWithoutExtension,
-                    driveLink = null,
-                    coverPath = coverFile?.absolutePath,
-                    filePath  = null,   // already deleted
-                    fileSize = file.length(),
-                    fileHash = PdfScanner.computeHash(file),
-                    scanDate = System.currentTimeMillis(),
-                    status = "THREAT",
-                    threatCount = result.threatCount,
-                    riskLevel = result.highestRisk.name
-                ))
-                AppNotificationManager.showThreat(applicationContext, result, id, deleted)
-            }
+                if (isCritical) {
+                    // Auto-delete the malicious file immediately
+                    val originalPath = if (uriStr.startsWith("file://")) uriStr.removePrefix("file://") else file.absolutePath
+                    val deleted = autoDeleteThreat(uriStr, file, originalPath)
 
-            // Clean temp cache files
-            if (file.absolutePath.startsWith(cacheDir.absolutePath) && file.name.startsWith("dl_")) {
-                file.delete()
+                    HistoryStore.add(applicationContext, PdfRecord(
+                        id = UUID.randomUUID().toString(),
+                        fileName = file.name,
+                        aiTitle = file.nameWithoutExtension,
+                        driveLink = null,
+                        coverPath = coverFile?.absolutePath,
+                        filePath  = null,   // already deleted
+                        fileSize = file.length(),
+                        fileHash = PdfScanner.computeHash(file),
+                        scanDate = System.currentTimeMillis(),
+                        status = "THREAT",
+                        threatCount = result.threatCount,
+                        riskLevel = result.highestRisk.name
+                    ))
+                    AppNotificationManager.showThreat(applicationContext, result, id, deleted)
+                } else {
+                    // Safe, or flagged with only low/medium-risk indicators → offer upload.
+                    // NOTE: we no longer delete the cached copy of content:// downloads here.
+                    // It is the exact file the Upload action re-reads, so deleting it made
+                    // tapping "Upload to Drive" silently fail. The OS clears app cache itself.
+                    AppNotificationManager.showSafePrompt(applicationContext, result, file.absolutePath, coverFile?.absolutePath, id)
+                }
+            } catch (c: CancellationException) {
+                // Service is shutting down — clear the in-flight notification, then let
+                // cancellation propagate normally (don't swallow it).
+                AppNotificationManager.dismiss(applicationContext, id)
+                throw c
+            } catch (t: Throwable) {
+                // Never leave the ongoing "🔍 Scanning…" notification stuck — an unhandled
+                // failure here was what made scanning appear to run forever.
+                AppNotificationManager.dismiss(applicationContext, id)
             }
         }
     }

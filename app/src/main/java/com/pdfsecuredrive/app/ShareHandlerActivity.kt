@@ -137,22 +137,44 @@ class ShareHandlerActivity : AppCompatActivity() {
     }
 
     private fun handleOtherPlatform(info: VideoInfo) {
-        // Try to detect direct mp4 in URL, else open in native app
-        if (info.url.contains(Regex("\\.(mp4|webm|mov)(\\?|$)", RegexOption.IGNORE_CASE))) {
-            startDownload(info, info.url)
-        } else {
-            val pkg = when (info.platform) {
-                Platform.INSTAGRAM -> "com.instagram.android"
-                Platform.TWITTER   -> "com.twitter.android"
-                Platform.LINKEDIN  -> "com.linkedin.android"
-                Platform.TIKTOK    -> "com.zhiliaoapp.musically"
-                Platform.FACEBOOK  -> "com.facebook.katana"
-                else               -> null
+        val btnDl = findViewById<Button>(R.id.btn_download)
+        val pb    = findViewById<ProgressBar>(R.id.pb_fetch)
+
+        btnDl.isEnabled = false
+        btnDl.text = "🔍 Finding stream…"
+        pb.visibility = View.VISIBLE
+
+        scope.launch {
+            // Try a real direct-stream extraction first (X / LinkedIn reliable, Instagram best-effort)
+            val stream = withContext(Dispatchers.IO) { VideoExtractor.extractStream(info) }
+            pb.visibility = View.GONE
+
+            when {
+                stream != null -> {
+                    btnDl.text = "⬇️ Starting download…"
+                    startDownload(info, stream.directUrl)
+                }
+                info.url.contains(Regex("\\.(mp4|webm|mov)(\\?|$)", RegexOption.IGNORE_CASE)) -> {
+                    btnDl.text = "⬇️ Starting download…"
+                    startDownload(info, info.url)
+                }
+                else -> {
+                    btnDl.isEnabled = true
+                    btnDl.text = "▶️ Open in ${info.platform.label}"
+                    val pkg = when (info.platform) {
+                        Platform.INSTAGRAM -> "com.instagram.android"
+                        Platform.TWITTER   -> "com.twitter.android"
+                        Platform.LINKEDIN  -> "com.linkedin.android"
+                        Platform.TIKTOK    -> "com.zhiliaoapp.musically"
+                        Platform.FACEBOOK  -> "com.facebook.katana"
+                        else               -> null
+                    }
+                    openInAppOrBrowser(info.url, pkg)
+                    Toast.makeText(this@ShareHandlerActivity,
+                        "Direct download unavailable (private/login-gated) — opening ${info.platform.label}",
+                        Toast.LENGTH_LONG).show()
+                }
             }
-            openInAppOrBrowser(info.url, pkg)
-            Toast.makeText(this,
-                "Opening in ${info.platform.label} — use in-app save/download option",
-                Toast.LENGTH_LONG).show()
         }
     }
 

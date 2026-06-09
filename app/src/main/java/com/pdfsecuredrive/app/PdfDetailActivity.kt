@@ -17,10 +17,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.pdfsecuredrive.app.model.PdfRecord
 import com.pdfsecuredrive.app.notification.AppNotificationManager
+import com.pdfsecuredrive.app.pdf.ShareCard
 import com.pdfsecuredrive.app.storage.HistoryStore
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -103,30 +102,44 @@ class PdfDetailActivity : AppCompatActivity() {
             }
         }
 
-        // Save cover
+        // Save cover only
         findViewById<Button>(R.id.btn_save_cover).setOnClickListener {
-            saveCoverToGallery(rec.coverPath)
+            val cover = rec.coverPath?.let { File(it) }
+            val ok = cover != null && cover.exists() && ShareCard.saveImageFile(this, cover)
+            Toast.makeText(this, if (ok) "Cover saved to Gallery" else "No cover to save", Toast.LENGTH_SHORT).show()
         }
+
+        // MASTER SAVE — one tap does everything
+        findViewById<Button>(R.id.btn_master_save).setOnClickListener { masterSave(rec) }
+    }
+
+    /** One tap: render+save the subscriber share-card to gallery AND copy title + link to clipboard. */
+    private fun masterSave(rec: PdfRecord) {
+        val title = rec.aiTitle.ifBlank { rec.fileName }
+        val link  = rec.driveLink
+
+        // 1. Build + save the share card image
+        val saved = ShareCard.saveShareCard(this, rec.coverPath, title, link)
+
+        // 2. Copy title + link together to clipboard
+        val clipText = buildString {
+            append(title)
+            append("\n").append(ShareCard.SUBSCRIBER_BADGE)
+            if (!link.isNullOrBlank()) append("\n").append(link)
+        }
+        (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+            .setPrimaryClip(ClipData.newPlainText("pdf_card", clipText))
+
+        // 3. One consolidated, honest result toast
+        val parts = mutableListOf<String>()
+        parts += if (saved) "card saved to Gallery" else "card save failed"
+        parts += "title copied"
+        parts += if (!link.isNullOrBlank()) "link copied" else "no Drive link yet"
+        Toast.makeText(this, "✓ " + parts.joinToString(" · "), Toast.LENGTH_LONG).show()
     }
 
     private fun showNoCover() {
         findViewById<ImageView>(R.id.iv_cover).visibility = View.GONE
         findViewById<TextView>(R.id.tv_no_cover).visibility = View.VISIBLE
-    }
-
-    private fun saveCoverToGallery(coverPath: String?) {
-        if (coverPath == null) return
-        try {
-            val src = File(coverPath); if (!src.exists()) return
-            val dest = File(
-                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES),
-                "PDFCovers"
-            ).also { it.mkdirs() }
-            FileInputStream(src).use { inp -> FileOutputStream(File(dest, src.name)).use { out -> inp.copyTo(out) } }
-            android.media.MediaScannerConnection.scanFile(this, arrayOf(File(dest, src.name).absolutePath), arrayOf("image/jpeg"), null)
-            Toast.makeText(this, "Cover saved to Pictures/PDFCovers", Toast.LENGTH_SHORT).show()
-        } catch (_: Exception) {
-            Toast.makeText(this, "Could not save cover", Toast.LENGTH_SHORT).show()
-        }
     }
 }
