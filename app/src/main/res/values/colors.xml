@@ -1,16 +1,27 @@
 <resources>
-    <color name="bg_dark">#FF080C14</color>
-    <color name="bg_card">#FF0F1624</color>
-    <color name="card_top">#FF141B2D</color>
-    <color name="divider">#FF1E2A3A</color>
-    <color name="text_primary">#FFE8EDF3</color>
-    <color name="text_secondary">#FF6B7A99</color>
-    <color name="accent_blue">#FF2979FF</color>
-    <color name="accent_blue_dark">#FF1565C0</color>
-    <color name="safe_green">#FF00E676</color>
-    <color name="error_red">#FFCF6679</color>
-    <color name="threat_critical">#FFFF1744</color>
-    <color name="threat_high">#FFFF6D00</color>
-    <color name="threat_medium">#FFFFD600</color>
-    <color name="chip_bg">#1A2979FF</color>
+    <!-- Backgrounds — true dark navy, with M3 tonal surface steps -->
+    <color name="bg_dark">#FF0A0F1E</color>
+    <color name="bg_card">#FF111A2E</color>
+    <color name="card_top">#FF18233B</color>
+    <color name="surface_container">#FF0E1526</color>
+    <color name="divider">#FF24324A</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FFEDF1F7</color>
+    <color name="text_secondary">#FF8A99B5</color>
+
+    <!-- Accents -->
+    <color name="accent_blue">#FF3B82F6</color>
+    <color name="accent_blue_dark">#FF1D5FD8</color>
+    <color name="accent_violet">#FF8B7CF6</color>
+    <color name="safe_green">#FF34D399</color>
+    <color name="error_red">#FFE06B7A</color>
+    <color name="threat_critical">#FFFF4D5E</color>
+    <color name="threat_high">#FFFF7A33</color>
+    <color name="threat_medium">#FFFFD23F</color>
+    <color name="chip_bg">#1A3B82F6</color>
+
+    <!-- Ripple tokens (touch feedback) -->
+    <color name="ripple_light">#33FFFFFF</color>
+    <color name="ripple_accent">#333B82F6</color>
 </resources>

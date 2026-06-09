@@ -52,7 +52,11 @@ class VideoDownloadWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
                 setTitle(info.title.ifBlank { "${info.platform.label} video" })
                 setDescription("Downloading ${info.platform.label} video…")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "PDFSecureDrive/$fileName")
+                // Download into our app-private Movies dir; DownloadCompleteReceiver then
+                // publishes it into the gallery's Video collection (MediaStore) so it actually
+                // shows up in the Gallery app — DownloadManager's own public-dir files land in
+                // the Downloads collection and gallery apps never index them.
+                setDestinationInExternalFilesDir(applicationContext, Environment.DIRECTORY_MOVIES, fileName)
                 addRequestHeader("User-Agent", downloadUa)
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(true)
@@ -65,7 +69,7 @@ class VideoDownloadWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
                 url           = info.url,
                 platform      = info.platform.label,
                 platformEmoji = info.platform.emoji,
-                localPath     = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)}/PDFSecureDrive/$fileName",
+                localPath     = "${Environment.DIRECTORY_MOVIES}/PDFSecureDrive/$fileName",
                 thumbnailUrl  = info.thumbnailUrl,
                 downloadDate  = System.currentTimeMillis(),
                 status        = "DOWNLOADED"
@@ -73,7 +77,7 @@ class VideoDownloadWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
 
             AppNotificationManager.showVideoResult(
                 applicationContext, true,
-                "${info.platform.emoji} ${info.title.take(60)} — saving to Movies/PDFSecureDrive. Check the download bar."
+                "${info.platform.emoji} ${info.title.take(60)} — downloading… it'll appear in your Gallery when done."
             )
             Result.success()
         } catch (e: Exception) {

@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_pressed="true">
-        <shape android:shape="rectangle">
-            <gradient android:angle="90" android:startColor="#FF1565C0" android:endColor="#FF0D47A1" />
-            <corners android:radius="14dp" />
-        </shape>
-    </item>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/ripple_light">
     <item>
-        <shape android:shape="rectangle">
-            <gradient android:angle="90" android:startColor="#FF2979FF" android:endColor="#FF1565C0" />
-            <corners android:radius="14dp" />
-        </shape>
+        <selector>
+            <item android:state_pressed="true">
+                <shape android:shape="rectangle">
+                    <gradient android:angle="90" android:startColor="#FF1565C0" android:endColor="#FF0D47A1" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <gradient android:angle="90" android:startColor="#FF2979FF" android:endColor="#FF1565C0" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+        </selector>
     </item>
-</selector>
+</ripple>

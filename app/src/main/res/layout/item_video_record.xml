@@ -5,11 +5,11 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:background="@drawable/video_item_bg"
-    android:padding="12dp"
+    android:padding="16dp"
     android:layout_marginBottom="10dp"
     android:clickable="true"
     android:focusable="true"
-    android:elevation="6dp">
+    android:elevation="1dp">
 
     <!-- Platform thumbnail / icon -->
     <FrameLayout

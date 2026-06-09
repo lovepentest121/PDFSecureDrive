@@ -187,7 +187,9 @@ class ShareHandlerActivity : AppCompatActivity() {
                 setTitle(info.title)
                 setDescription("Downloading ${info.platform.label} video…")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "PDFSecureDrive/$fileName")
+                // App-private dir → DownloadCompleteReceiver republishes into the gallery's
+                // Video collection so it actually shows up in the Gallery app.
+                setDestinationInExternalFilesDir(this@ShareHandlerActivity, Environment.DIRECTORY_MOVIES, fileName)
                 addRequestHeader("User-Agent",
                     "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/112 Mobile Safari/537.36")
                 addRequestHeader("Referer", "https://www.youtube.com/")
@@ -204,13 +206,13 @@ class ShareHandlerActivity : AppCompatActivity() {
                 url          = info.url,
                 platform     = info.platform.label,
                 platformEmoji = info.platform.emoji,
-                localPath    = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)}/PDFSecureDrive/$fileName",
+                localPath    = "${Environment.DIRECTORY_MOVIES}/PDFSecureDrive/$fileName",
                 thumbnailUrl  = info.thumbnailUrl,
                 downloadDate = System.currentTimeMillis(),
                 status       = "DOWNLOADED"
             ))
 
-            Toast.makeText(this, "⬇️ Download started! Check notification bar.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "⬇️ Downloading… it'll appear in your Gallery when done.", Toast.LENGTH_LONG).show()
             finish()
         } catch (e: Exception) {
             Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()

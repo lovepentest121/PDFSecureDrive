@@ -79,7 +79,9 @@ object VideoExtractor {
                     }
                 }
             }
-            bestUrl?.takeIf { it.isNotBlank() }?.let { StreamInfo(it, "${bestBitrate / 1000}k", "video/mp4") }
+            bestUrl?.takeIf { it.isNotBlank() }?.let {
+                StreamInfo(it, if (bestBitrate > 0) "${bestBitrate / 1000}k" else "video", "video/mp4")
+            }
         } catch (_: Exception) { null }
     }
 
@@ -90,26 +92,41 @@ object VideoExtractor {
 
     // ---- LinkedIn: parse <video data-sources> JSON from public post HTML --------------------
     private fun extractLinkedIn(url: String): StreamInfo? {
-        val html = httpGet(url, ua = DESKTOP_UA, maxBytes = 400_000) ?: return null
-        val rawAttr = Regex("data-sources=\"([^\"]+)\"").find(html)?.groupValues?.get(1) ?: return null
-        return try {
-            val arr = JSONArray(decodeHtmlEntities(rawAttr))
-            var best: String? = null
-            for (i in 0 until arr.length()) {
-                val s = arr.getJSONObject(i)
-                if (s.optString("type") == "video/mp4") {   // skip x-mpegURL/HLS
-                    val src = s.optString("src")
-                    if (src.isNotBlank()) best = src
+        // LinkedIn auth-walls datacenter IPs (HTTP 999); a Googlebot UA usually gets the full
+        // public markup. The <video> tag sits deep in a heavy page, so read a LARGE window
+        // (the old 400 KB cap truncated before the video element — a key reason this failed).
+        val html = httpGet(url, ua = "Googlebot", maxBytes = 5_000_000)
+            ?: httpGet(url, ua = DESKTOP_UA, maxBytes = 5_000_000)
+            ?: return null
+
+        // data-sources may be double- OR single-quoted, JSON HTML-entity-encoded
+        val rawAttr = Regex("data-sources=(?:\"([^\"]+)\"|'([^']+)')").find(html)
+            ?.let { m -> m.groupValues[1].ifEmpty { m.groupValues[2] } }
+        if (!rawAttr.isNullOrBlank()) {
+            runCatching {
+                val arr = JSONArray(decodeHtmlEntities(rawAttr))
+                var best: String? = null
+                for (i in 0 until arr.length()) {
+                    val s = arr.getJSONObject(i)
+                    val type = s.optString("type")
+                    val src  = s.optString("src")
+                    if (src.isNotBlank() && (type == "video/mp4" || src.contains(".mp4"))) best = src
                 }
-            }
-            best?.let { StreamInfo(it, "video", "video/mp4") }
-        } catch (_: Exception) { null }
+                best
+            }.getOrNull()?.let { return StreamInfo(it, "video", "video/mp4") }
+        }
+        // JSON-LD / embedded progressive contentUrl
+        Regex("\"contentUrl\":\"(https:[^\"]+\\.mp4[^\"]*)\"").find(html)?.groupValues?.get(1)
+            ?.let { return StreamInfo(decodeJsonString(it), "video", "video/mp4") }
+        return ogVideoFromHtml(html)?.let { StreamInfo(it, "video", "video/mp4") }
     }
 
     // ---- Instagram: HTML embedded video_url / og:video (best-effort, often fails) -----------
     private fun extractInstagram(url: String): StreamInfo? {
-        val html = httpGet(url, ua = DESKTOP_UA, maxBytes = 400_000) ?: return null
+        val html = httpGet(url, ua = DESKTOP_UA, maxBytes = 5_000_000) ?: return null
         Regex("\"video_url\":\"(https:[^\"]+\\.mp4[^\"]*)\"").find(html)?.groupValues?.get(1)
+            ?.let { return StreamInfo(decodeJsonString(it), "video", "video/mp4") }
+        Regex("\"contentUrl\":\"(https:[^\"]+\\.mp4[^\"]*)\"").find(html)?.groupValues?.get(1)
             ?.let { return StreamInfo(decodeJsonString(it), "video", "video/mp4") }
         ogVideoFromHtml(html)?.let { return StreamInfo(it, "video", "video/mp4") }
         return null
@@ -117,7 +134,7 @@ object VideoExtractor {
 
     // ---- Generic og:video meta fallback -----------------------------------------------------
     private fun ogVideo(url: String): StreamInfo? {
-        val html = httpGet(url, ua = DESKTOP_UA, maxBytes = 300_000) ?: return null
+        val html = httpGet(url, ua = DESKTOP_UA, maxBytes = 2_000_000) ?: return null
         return ogVideoFromHtml(html)?.let { StreamInfo(it, "video", "video/mp4") }
     }
 
